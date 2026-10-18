@@ -1,0 +1,8 @@
+{
+  "id": "network/topology",
+  "title": "Network topology",
+  "kind": "network",
+  "status": "draft",
+  "variants": { "v1": "v1.md", "target": "target.md" },
+  "updated": "{{TODAY}}"
+}

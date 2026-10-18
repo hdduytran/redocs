@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReDocs file:// spike</title>
+<style>
+  :root { --bg:#fff; --fg:#111; --muted:#555; }
+  [data-theme="dark"] { --bg:#111; --fg:#eee; --muted:#aaa; }
+  body { background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; margin:2rem; }
+  iframe { width:100%; border:1px solid var(--muted); }
+  #results li[data-ok="true"]::before { content:"PASS "; color:green; }
+  #results li[data-ok="false"]::before { content:"FAIL "; color:#c00; }
+</style>
+<!-- Behaviour 3: data loaded through <script src>, not fetch() -->
+<script src="data/search-index.js"></script>
+</head>
+<body>
+<h1>ReDocs file:// spike</h1>
+<p><a href="sub/page.html">Relative link to sub/page.html</a> · <a href="redirect.html">Meta refresh redirect</a></p>
+<button id="theme" type="button">Toggle theme</button>
+<label>Search <input id="q" type="search" value="gateway"></label>
+<ul id="hits"></ul>
+<ul id="results" aria-live="polite"></ul>
+<h2>Embedded archify artifact</h2>
+<iframe id="art" title="Archify sample" src="embed/archify-sample.html" height="300"></iframe>
+<script>
+  // Spike results are exposed on window.__SPIKE so the headless harness can read them.
+  const results = {};
+  window.__SPIKE = results;
+  function report(name, ok, note) {
+    results[name] = { ok, note: note || '' };
+    const li = document.createElement('li');
+    li.dataset.ok = String(ok);
+    li.textContent = name + (note ? ' - ' + note : '');
+    document.getElementById('results').appendChild(li);
+  }
+
+  // 3. script-src data
+  report('script-src-data', Array.isArray(window.__REDOCS_SEARCH), 'items=' + (window.__REDOCS_SEARCH || []).length);
+
+  // Search over script data
+  const q = document.getElementById('q');
+  function search() {
+    const term = q.value.toLowerCase();
+    const hits = (window.__REDOCS_SEARCH || []).filter(d => (d.title + ' ' + d.text).toLowerCase().includes(term));
+    document.getElementById('hits').innerHTML = hits.map(h => '<li>' + h.title + '</li>').join('');
+    return hits.length;
+  }
+  q.addEventListener('input', search);
+  report('search-offline', search() > 0);
+
+  // 4. localStorage theme
+  try {
+    localStorage.setItem('redocs-spike', '1');
+    const ok = localStorage.getItem('redocs-spike') === '1';
+    document.documentElement.dataset.theme = localStorage.getItem('redocs-theme') || 'light';
+    document.getElementById('theme').onclick = () => {
+      const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem('redocs-theme', t);
+    };
+    report('localStorage', ok);
+  } catch (e) { report('localStorage', false, String(e)); }
+
+  // 5. fetch() is expected to fail on file:// (documented, not required)
+  fetch('data/search-index.js').then(() => report('fetch-local (expected FAIL)', true))
+    .catch(e => report('fetch-local (expected FAIL)', false, e.name));
+
+  // 1. iframe loads + 2. postMessage resize
+  const art = document.getElementById('art');
+  art.addEventListener('load', () => {
+    let readable = false;
+    try { readable = !!art.contentDocument && !!art.contentDocument.body; } catch (e) { readable = false; }
+    report('iframe-load', true);
+    report('iframe-contentDocument-readable', readable);
+  });
+  let resized = false;
+  window.addEventListener('message', (ev) => {
+    if (ev.source !== art.contentWindow || !ev.data || ev.data.type !== 'redocs:height') return;
+    if (!resized) report('postMessage-resize', true, 'h=' + ev.data.h);
+    resized = true;
+    // Cap to keep viewport-filling diagrams sane.
+    art.style.height = Math.min(Math.max(ev.data.h, 300), 900) + 'px';
+  });
+  setTimeout(() => { if (!resized) report('postMessage-resize', false, 'no message in 5s'); }, 5000);
+</script>
+</body>
+</html>

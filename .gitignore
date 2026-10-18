@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.zip
+.DS_Store
+# Local working records (plans, journals) and editor/agent settings stay out of the public repo.
+plans/
+.kiro/
+.vscode/

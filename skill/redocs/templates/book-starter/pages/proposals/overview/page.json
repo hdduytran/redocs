@@ -1,0 +1,7 @@
+{
+  "id": "proposals/overview",
+  "title": "Proposals",
+  "kind": "proposal",
+  "status": "draft",
+  "updated": "{{TODAY}}"
+}

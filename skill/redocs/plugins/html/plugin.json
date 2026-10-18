@@ -1,0 +1,9 @@
+{
+  "name": "html",
+  "version": "1.0.0",
+  "description": "A self-contained HTML document (wireframes, mockups, output exported from other AI documentation tools). Validated to work offline, then copied.",
+  "output": "html-standalone",
+  "specExtension": ".html",
+  "adapter": "adapter-static-html-copy.mjs",
+  "options": []
+}

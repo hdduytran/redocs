@@ -1,0 +1,12 @@
+{
+  "name": "redocs-workspace",
+  "private": true,
+  "type": "module",
+  "description": "Development workspace for the ReDocs skill (AI-native system design books).",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 \"skill/redocs/test/**/*.test.mjs\"",
+    "spike:chrome": "node spikes/file-protocol/run-chrome-spike.mjs"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "archify",
+  "version": "1.0.0",
+  "description": "Architecture, workflow, sequence, dataflow and lifecycle diagrams rendered by the archify skill (its own finalize gate included).",
+  "output": "html-standalone",
+  "specExtension": ".json",
+  "adapter": "adapter-archify-finalize.mjs",
+  "options": ["type"]
+}

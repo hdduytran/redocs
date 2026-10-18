@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "redocs/entity-file.schema.json",
+  "title": "ReDocs entity registry file (entities/<type>.json)",
+  "description": "An array of entities. Every service, datastore, integration, network zone, etc. the book talks about lives here once.",
+  "type": "array",
+  "items": { "$ref": "#/$defs/entity" },
+  "$defs": {
+    "entityId": { "type": "string", "pattern": "^[a-z][a-z0-9-]*:[a-z0-9][a-z0-9-]*$" },
+    "milestoneId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "entity": {
+      "type": "object",
+      "required": ["id", "type", "name"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-": true },
+      "properties": {
+        "id": { "$ref": "#/$defs/entityId", "description": "<prefix>:<slug>, e.g. svc:billing, db:orders, zone:private." },
+        "type": {
+          "description": "Recommended: service, datastore, queue, integration, external, client, network-zone, infra, team.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string" },
+        "owner": { "type": "string" },
+        "tech": { "type": "array", "items": { "type": "string" } },
+        "depends_on": { "type": "array", "items": { "$ref": "#/$defs/entityId" } },
+        "since": { "$ref": "#/$defs/milestoneId", "description": "First milestone where the entity exists. Omitted = from the first milestone." },
+        "until": { "$ref": "#/$defs/milestoneId", "description": "First milestone where the entity no longer exists. Omitted = never removed." },
+        "replaced_by": { "$ref": "#/$defs/entityId" },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "url"],
+            "additionalProperties": false,
+            "properties": { "label": { "type": "string" }, "url": { "type": "string" } }
+          }
+        },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

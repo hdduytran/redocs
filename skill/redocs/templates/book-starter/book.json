@@ -1,0 +1,20 @@
+{
+  "$schema": "redocs/book.schema.json",
+  "schemaVersion": 1,
+  "id": "{{BOOK_ID}}",
+  "title": "{{BOOK_TITLE}}",
+  "language": "{{LANGUAGE}}",
+  "milestones": [
+    { "id": "v1", "label": "v1", "status": "current", "description": "The system as it runs today." },
+    { "id": "target", "label": "Target", "status": "target", "description": "The long-term architecture we are steering towards." }
+  ],
+  "chapters": [
+    { "id": "vision", "title": "Vision", "pages": ["vision/why"] },
+    { "id": "overview", "title": "Overview", "pages": ["overview/system-context"] },
+    { "id": "services", "title": "Services", "pages": ["services/overview"] },
+    { "id": "flows", "title": "Flows", "pages": ["flows/overview"] },
+    { "id": "network", "title": "Network & Infrastructure", "pages": ["network/topology"] },
+    { "id": "proposals", "title": "Proposals", "pages": ["proposals/overview"] }
+  ],
+  "plugins": {}
+}

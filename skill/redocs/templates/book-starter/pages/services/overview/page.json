@@ -1,0 +1,7 @@
+{
+  "id": "services/overview",
+  "title": "Services",
+  "kind": "service",
+  "status": "draft",
+  "updated": "{{TODAY}}"
+}

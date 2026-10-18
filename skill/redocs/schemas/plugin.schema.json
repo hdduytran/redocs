@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "redocs/plugin.schema.json",
+  "title": "ReDocs plugin manifest (plugins/<name>/plugin.json)",
+  "type": "object",
+  "required": ["name", "version", "description", "output", "adapter"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "output": { "enum": ["html-standalone", "image"] },
+    "specExtension": { "type": "string", "pattern": "^\\.[a-z0-9]+$", "default": ".json" },
+    "adapter": {
+      "description": "Module file (relative to the manifest) exporting async render({ specFile, outputFile, options, book, plugin }).",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*\\.mjs$"
+    },
+    "options": {
+      "description": "Names of options accepted by the adapter (e.g. 'type' for archify).",
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "id": "flows/overview",
+  "title": "Key flows",
+  "kind": "flow",
+  "status": "draft",
+  "updated": "{{TODAY}}"
+}

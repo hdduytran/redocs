@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sub page</title><script src="../data/search-index.js"></script></head>
+<body>
+<h1>Sub page</h1>
+<p id="data"></p>
+<p><a href="../index.html">Back to index (relative ../)</a></p>
+<script>
+  window.__SPIKE = { 'relative-link-and-parent-script': { ok: Array.isArray(window.__REDOCS_SEARCH) } };
+  document.getElementById('data').textContent = 'search items: ' + (window.__REDOCS_SEARCH || []).length;
+</script>
+</body>
+</html>

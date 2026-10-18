@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "redocs/artifact-receipt.schema.json",
+  "title": "ReDocs artifact receipt (artifacts/<artifact-id>/receipt.json)",
+  "type": "object",
+  "required": ["ok", "artifactId", "plugin", "inputHash", "output"],
+  "additionalProperties": false,
+  "properties": {
+    "ok": { "type": "boolean" },
+    "artifactId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "plugin": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "pluginVersion": { "type": "string" },
+    "options": { "type": "object", "description": "Plugin options used for the render, e.g. { \"type\": \"architecture\" }." },
+    "inputHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$", "description": "sha256 of spec bytes at render time." },
+    "output": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*\\.(html|png|jpg|jpeg|webp|svg)$" },
+    "title": { "type": "string" },
+    "error": { "type": "string" },
+    "pluginReceipt": { "description": "Raw summary returned by the plugin, kept for diagnosis." }
+  }
+}
