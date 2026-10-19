@@ -4,7 +4,7 @@
 
 import { RedocsError } from '../lib/shared-helpers.mjs';
 
-const BOOLEAN_FLAGS = new Set(['json', 'force', 'html', 'standalone', 'strict', 'skip-browser', 'allow-skip-browser', 'refresh-stale', 'allow-book-plugins', 'help', 'list', 'reopen']);
+const BOOLEAN_FLAGS = new Set(['json', 'force', 'html', 'standalone', 'strict', 'skip-browser', 'allow-skip-browser', 'refresh-stale', 'allow-book-plugins', 'help', 'list', 'reopen', 'apply']);
 const LIST_FLAGS = new Set(['variants', 'depends-on', 'tech']);
 
 function parseArgs(argv) {
@@ -56,6 +56,7 @@ Usage: redocs <command> [args] [--json]
   query <book> changes [--from <m>] [--to <m>]
   query <book> citations "<text with page: refs>"
   mcp <book>                                             the same tools as an MCP server (stdio)
+  upgrade <book> [--apply] [--to <version>] [--force]    bring a book up to this skill's version (CHANGELOG.md)
 
 Environment: REDOCS_CHROME (browser path), REDOCS_CHROME_NO_SANDBOX=1, REDOCS_ARCHIFY (archify skill dir).`;
 
@@ -122,6 +123,10 @@ const COMMANDS = {
     const { runMcpServer } = await import('../lib/command-mcp-server.mjs');
     const handled = await runMcpServer({ book: need(book, '<book>') });
     return { ok: true, command: 'mcp', silent: true, handled };
+  },
+  async upgrade({ positionals: [book], flags }) {
+    const { upgradeBook } = await import('../lib/command-upgrade-book.mjs');
+    return upgradeBook({ book: need(book, '<book>'), apply: flags.apply, to: flags.to, force: flags.force });
   },
 };
 

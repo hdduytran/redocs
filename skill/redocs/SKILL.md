@@ -3,7 +3,7 @@ name: redocs
 description: Write and maintain an AI-authored "system design book" for a large system — vision, current architecture, proposals and target state across milestones (v1, v2, target) — as a Git repo of Markdown, HTML and embedded archify diagrams, built to static HTML that opens over file://. Use when the user asks for system/architecture documentation as a book, "ReDocs", "tài liệu hệ thống", a design book for microservices, data flows, integrations, network or infrastructure, a proposal page for a planned change, or to add a diagram, wireframe or screenshot to such a book.
 license: MIT
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # ReDocs
@@ -47,6 +47,7 @@ work (`finalize`, `embed archify`) with `REDOCS_CHROME_NO_SANDBOX=1`.
 | Comment on a page / review with others | `comment <book> <page-id> --author "..." --body "..."` (reply with `--reply-to`, close with `--resolve`); commit the `comments/` file | [comments-and-copy.md](references/comments-and-copy.md) |
 | Answer a question about the book / find where something is described | `query <book> map`, then `query <book> search <words>` / `outline <page>`, then `read page:<id>#<anchor>`; cite `page:` refs (or run `mcp <book>` for an MCP client) | [agent-query-and-chat.md](references/agent-query-and-chat.md) |
 | Let readers ask an AI inside the book | set `"chat": {"enabled": true, ...}` in `book.json`, then `finalize` | [agent-query-and-chat.md](references/agent-query-and-chat.md) |
+| The skill was updated / `check` reports `RD014` | `upgrade <book>` (plan only), show the owner the plan, then `upgrade <book> --apply` on a clean Git tree; ask the owner about `owner` items | [CHANGELOG.md](CHANGELOG.md) |
 | Validate / finish | `check <book>`, then `finalize <book>` | [check-codes.md](references/check-codes.md) |
 | Share the book | `finalize`, then `pack <book>` (zip; readers open `index.html`) | — |
 

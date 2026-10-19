@@ -1,6 +1,7 @@
 {
   "$schema": "redocs/book.schema.json",
   "schemaVersion": 1,
+  "redocsVersion": "{{REDOCS_VERSION}}",
   "id": "{{BOOK_ID}}",
   "title": "{{BOOK_TITLE}}",
   "language": "{{LANGUAGE}}",

@@ -30,8 +30,9 @@ The `redocs` CLI ships with the ReDocs skill: `node <skill>/bin/redocs.mjs <comm
 | Add a milestone variant | `redocs add-variant . <page-id> <milestone>` |
 | Embed a diagram | `redocs embed . archify <artifact-id> --spec <file.json> --type architecture` |
 | Validate | `redocs check .` |
-| Find where something is described | `redocs query . search <words>`, then `redocs query . read page:<id>#<anchor>` |
+| Find where something is described | `redocs query . search <words>`, then `redocs query . read page:<id>#<anchor>` (or `redocs mcp .` for an MCP client) |
 | **Finish** | `redocs finalize .` (check, build and the file:// browser check) |
 | Share | `redocs pack .` (zip of `dist/`) |
+| The skill was updated (`RD014` warning) | `redocs upgrade .` to see the plan, then `redocs upgrade . --apply` |
 
 Work is done only when `redocs finalize .` exits 0. Report the receipt summary, not a guess.

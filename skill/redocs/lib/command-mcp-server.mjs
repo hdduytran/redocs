@@ -7,8 +7,9 @@
 
 import { createInterface } from 'node:readline';
 import { agentIndexFor, dispatch, loadAgentIndexes, TOOL_SPECS } from './query-book-index.mjs';
+import { REDOCS_VERSION } from './redocs-version.mjs';
 
-const SERVER_INFO = { name: 'redocs', version: '0.1.0' };
+const SERVER_INFO = { name: 'redocs', version: REDOCS_VERSION };
 const DEFAULT_PROTOCOL = '2025-06-18';
 
 export const MCP_INSTRUCTIONS = `Read-only tools over one ReDocs system design book.

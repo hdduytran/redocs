@@ -21,6 +21,7 @@ File names describe their role; start from the group that owns the change.
 | Authoring | `command-init-`, `command-add-`, `command-promote-` | Commands that edit a book |
 | Reviewing | `command-comment` | Comment threads in `comments/<page-id>.jsonl` (add, reply, resolve, list) |
 | Agent query | `build-agent-index`, `query-book-index`, `command-query-`, `command-mcp-` | Per-milestone agent index, the query tools (engine in `assets/theme/redocs-query.js`), `redocs query`, `redocs mcp` |
+| Upgrade | `redocs-version`, `upgrade-migrations`, `command-upgrade-` | Skill version (from `package.json`), per-release migration steps (prose in [`CHANGELOG.md`](../skill/redocs/CHANGELOG.md)), `redocs upgrade`, check `RD014` |
 | Artifacts | `command-embed-`, `load-plugin-registry` | Embedding and the plugin contract |
 | Packaging | `command-pack-` | The zip |
 | Shared | `shared-helpers` | Diagnostics, safe paths, stable JSON, hashing, HTML escaping |

@@ -9,6 +9,7 @@
   "properties": {
     "$schema": { "type": "string" },
     "schemaVersion": { "const": 1 },
+    "redocsVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "ReDocs version the book was last written or upgraded with. Missing = 0.1.0. Use `redocs upgrade` to change it." },
     "id": { "$ref": "#/$defs/slug" },
     "title": { "type": "string", "minLength": 1 },
     "subtitle": { "type": "string" },

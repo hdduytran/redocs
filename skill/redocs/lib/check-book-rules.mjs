@@ -9,13 +9,29 @@
 // RD005 entity not alive at milestone    RD012 milestone / chapter declaration
 // RD006 page variants and source files
 // RD013 comment references a missing page, anchor or reply target
+// RD014 book written with an older (warning) or newer (error) ReDocs than this skill
 
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import { bookVersion, compareVersions, REDOCS_VERSION } from './redocs-version.mjs';
 import { renderedKey } from './render-book-pages.mjs';
 import { diagnostic, sha256File } from './shared-helpers.mjs';
 
-export const RULE_CODES = ['RD000', 'RD001', 'RD002', 'RD003', 'RD004', 'RD005', 'RD006', 'RD007', 'RD008', 'RD009', 'RD010', 'RD011', 'RD012', 'RD013'];
+export const RULE_CODES = ['RD000', 'RD001', 'RD002', 'RD003', 'RD004', 'RD005', 'RD006', 'RD007', 'RD008', 'RD009', 'RD010', 'RD011', 'RD012', 'RD013', 'RD014'];
+
+function ruleSkillVersion(book, out) {
+  const version = bookVersion(book.config);
+  const order = compareVersions(version, REDOCS_VERSION);
+  if (order < 0) {
+    out.push(diagnostic('RD014', 'warning', `Book format is ReDocs ${version}; this skill is ${REDOCS_VERSION}`, {
+      file: 'book.json', pointer: '/redocsVersion', hint: 'Run `redocs upgrade <book>` to see what changed, then `redocs upgrade <book> --apply`.',
+    }));
+  } else if (order > 0) {
+    out.push(diagnostic('RD014', 'error', `Book was written with ReDocs ${version}, newer than this skill (${REDOCS_VERSION})`, {
+      file: 'book.json', pointer: '/redocsVersion', hint: 'Update the ReDocs skill.',
+    }));
+  }
+}
 
 function ruleMilestonesAndChapters(book, out) {
   const ids = book.milestones.map((m) => m.id);
@@ -174,6 +190,7 @@ function ruleComments(book, rendered, out) {
 export function runCheckRules(book, rendered, renderDiagnostics) {
   const out = [...book.diagnostics];
   if (!book.config) return out;
+  ruleSkillVersion(book, out);
   ruleMilestonesAndChapters(book, out);
   ruleChapterPages(book, out);
   ruleVariants(book, out);

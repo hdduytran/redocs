@@ -1,6 +1,6 @@
 {
   "name": "redocs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "ReDocs: AI-authored system design books rendered to static HTML that opens over file://.",
