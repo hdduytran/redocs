@@ -19,6 +19,7 @@ named in `file`; never edit `dist/`.
 | RD010 | error | Entity graph: unknown `depends_on`/`replaced_by` target, `replaced_by` without `until`, unknown milestone in `since`/`until`, or `since` not before `until`. | Fix the entity in `entities/`. |
 | RD011 | warning | An open `TODO(owner)` question remains on a page. | Ask the owner; replace the marker with the answer. |
 | RD012 | error | Not exactly one milestone has status `current`, or milestone/chapter ids repeat. | `redocs promote <book> <milestone>`, or fix `book.json`. |
+| RD013 | error / warning | A comments file targets an unknown page, a comment replies to an unknown id, or two comments share an id (errors); a comment is anchored to a heading that no longer exists (warning). | Rename/fix `comments/<page-id>.jsonl`, or re-anchor the comment. |
 
 `--strict` turns warnings into a failed result. `finalize` additionally fails when the
 file:// browser check sees a console error, a failed resource load or a page that does not

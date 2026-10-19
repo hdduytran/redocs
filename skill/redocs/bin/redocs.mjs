@@ -4,7 +4,7 @@
 
 import { RedocsError } from '../lib/shared-helpers.mjs';
 
-const BOOLEAN_FLAGS = new Set(['json', 'force', 'html', 'standalone', 'strict', 'skip-browser', 'allow-skip-browser', 'refresh-stale', 'allow-book-plugins', 'help']);
+const BOOLEAN_FLAGS = new Set(['json', 'force', 'html', 'standalone', 'strict', 'skip-browser', 'allow-skip-browser', 'refresh-stale', 'allow-book-plugins', 'help', 'list', 'reopen']);
 const LIST_FLAGS = new Set(['variants', 'depends-on', 'tech']);
 
 function parseArgs(argv) {
@@ -45,6 +45,9 @@ Usage: redocs <command> [args] [--json]
   build <book> [--out <dir>]
   pack <book> [--out <file.zip>]
   finalize <book> [--strict] [--skip-browser --allow-skip-browser]
+  comment <book> <page-id> --author "..." --body "..." [--anchor <heading-slug>] [--reply-to <comment-id>]
+  comment <book> <page-id> --resolve <comment-id> [--reopen]
+  comment <book> [<page-id>] --list
 
 Environment: REDOCS_CHROME (browser path), REDOCS_CHROME_NO_SANDBOX=1, REDOCS_ARCHIFY (archify skill dir).`;
 
@@ -94,6 +97,14 @@ const COMMANDS = {
   async finalize({ positionals: [book], flags }) {
     const { finalizeBook } = await import('../lib/command-finalize-book.mjs');
     return finalizeBook({ book: need(book, '<book>'), strict: flags.strict, skipBrowser: flags['skip-browser'], allowSkipBrowser: flags['allow-skip-browser'] });
+  },
+  async comment({ positionals: [book, page, id], flags }) {
+    const mod = await import('../lib/command-comment.mjs');
+    if (flags.list) return mod.listComments({ book: need(book, '<book>'), page });
+    if (flags.resolve || flags.reopen) {
+      return mod.resolveComment({ book: need(book, '<book>'), page: need(page, '<page-id>'), id: need(flags.resolve || id, '--resolve <comment-id>'), reopen: flags.reopen });
+    }
+    return mod.addComment({ book: need(book, '<book>'), page: need(page, '<page-id>'), author: flags.author, body: flags.body, anchor: flags.anchor, replyTo: flags['reply-to'] });
   },
 };
 

@@ -44,6 +44,7 @@ work (`finalize`, `embed archify`) with `REDOCS_CHROME_NO_SANDBOX=1`.
 | Add a wireframe / mockup / other tool's HTML | `embed <book> html <id> --spec f.html` | [plugins-and-embeds.md](references/plugins-and-embeds.md) |
 | Add a screenshot | copy into `assets/screenshots/`, reference `![caption](asset:screenshots/x.png)` | [plugins-and-embeds.md](references/plugins-and-embeds.md) |
 | The system reached the next milestone | `promote <book> <milestone>`, then walk the review list with the owner | [milestones-and-variants.md](references/milestones-and-variants.md) |
+| Comment on a page / review with others | `comment <book> <page-id> --author "..." --body "..."` (reply with `--reply-to`, close with `--resolve`); commit the `comments/` file | [comments-and-copy.md](references/comments-and-copy.md) |
 | Validate / finish | `check <book>`, then `finalize <book>` | [check-codes.md](references/check-codes.md) |
 | Share the book | `finalize`, then `pack <book>` (zip; readers open `index.html`) | — |
 

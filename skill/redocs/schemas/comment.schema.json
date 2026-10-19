@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "redocs/comment.schema.json",
+  "title": "ReDocs comment (one JSON object per line in comments/<page-id>.jsonl)",
+  "type": "object",
+  "required": ["id", "author", "created", "body"],
+  "additionalProperties": false,
+  "patternProperties": { "^x-": true },
+  "properties": {
+    "id": {
+      "description": "Stable comment id, unique within the page thread.",
+      "type": "string",
+      "minLength": 1
+    },
+    "author": {
+      "description": "Display name of whoever wrote it — a person or an agent.",
+      "type": "string",
+      "minLength": 1
+    },
+    "created": {
+      "description": "ISO-8601 timestamp.",
+      "type": "string",
+      "minLength": 1
+    },
+    "body": {
+      "description": "Comment text (Markdown).",
+      "type": "string",
+      "minLength": 1
+    },
+    "anchor": {
+      "description": "Optional heading slug on the page this comment is attached to.",
+      "type": "string"
+    },
+    "reply_to": {
+      "description": "Id of the comment this one replies to (same page thread).",
+      "type": "string"
+    },
+    "resolved": {
+      "description": "Whether the thread this comment heads is marked resolved.",
+      "type": "boolean"
+    }
+  }
+}

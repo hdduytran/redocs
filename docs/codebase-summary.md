@@ -19,6 +19,7 @@ File names describe their role; start from the group that owns the change.
 | Site output | `site-paths-`, `build-generated-pages`, `command-build-` | `dist/` layout, generated catalog/changes/compare pages, writing the site |
 | Gate | `check-book-rules`, `command-check-`, `command-finalize-`, `chrome-cdp-` | Check rules, finalize, the file:// browser check |
 | Authoring | `command-init-`, `command-add-`, `command-promote-` | Commands that edit a book |
+| Reviewing | `command-comment` | Comment threads in `comments/<page-id>.jsonl` (add, reply, resolve, list) |
 | Artifacts | `command-embed-`, `load-plugin-registry` | Embedding and the plugin contract |
 | Packaging | `command-pack-` | The zip |
 | Shared | `shared-helpers` | Diagnostics, safe paths, stable JSON, hashing, HTML escaping |
@@ -27,9 +28,9 @@ File names describe their role; start from the group that owns the change.
 
 | Concern | Owner |
 |---|---|
-| Book, page, entity, receipt, plugin schemas | [`skill/redocs/schemas/`](../skill/redocs/schemas/) |
+| Book, page, entity, receipt, plugin, comment schemas | [`skill/redocs/schemas/`](../skill/redocs/schemas/) |
 | Starter book used by `init` | [`skill/redocs/templates/book-starter/`](../skill/redocs/templates/book-starter/) |
-| Reader theme (CSS variables, search, embeds) | [`skill/redocs/assets/theme/`](../skill/redocs/assets/theme/) |
+| Reader theme (CSS variables, search, embeds, copy-for-AI, comments) | [`skill/redocs/assets/theme/`](../skill/redocs/assets/theme/) |
 | Built-in plugins | [`skill/redocs/plugins/`](../skill/redocs/plugins/) |
 | Check codes for authors | [`skill/redocs/references/check-codes.md`](../skill/redocs/references/check-codes.md) (kept in sync with `RULE_CODES` by a test) |
 | Visual review helper | [`skill/redocs/scripts/screenshot-pages.mjs`](../skill/redocs/scripts/screenshot-pages.mjs) |

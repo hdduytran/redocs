@@ -138,6 +138,17 @@ export function buildBook(o) {
       const html = renderShell({
         book, milestone, outFile: r.outFile, title: page.meta.title, bodyHtml: r.bodyHtml, headings: r.headings,
         switchTargets, notices: pageNotices(book, r), footerHtml: pageFooter(book, r), kind: page.meta.kind,
+        copyMeta: {
+          pageRef: `page:${page.id}`,
+          title: page.meta.title,
+          milestone,
+          kind: page.meta.kind,
+          entities: page.meta.entities || [],
+          bookTitle: book.config.title,
+        },
+        sourceText: r.rawSource,
+        sourceFormat: r.sourceFormat,
+        comments: book.comments.get(page.id) || [],
       });
       writeOut(dist, r.outFile, html, written);
       pageCount += 1;

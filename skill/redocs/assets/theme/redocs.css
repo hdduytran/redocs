@@ -90,7 +90,7 @@ tr.is-active td { background: var(--rd-surface-2); font-weight: 600; }
 .rd-toc__l3 { padding-left: .8rem; }
 
 /* Context, notices, badges */
-.rd-context { display: flex; gap: .5rem; align-items: center; margin: 0; }
+.rd-context { display: flex; gap: .5rem; align-items: center; margin: 0; width: 100%; }
 .rd-badge { display: inline-block; font-size: .78rem; padding: .05rem .5rem; border-radius: 999px; border: 1px solid var(--rd-border); color: var(--rd-muted); vertical-align: middle; }
 .rd-badge--ms { color: var(--rd-text); background: var(--rd-surface); }
 .rd-badge--current { border-color: var(--rd-ok); }
@@ -130,6 +130,12 @@ tr.is-active td { background: var(--rd-surface-2); font-weight: 600; }
   .rd-toc { display: none; }
 }
 @media (max-width: 760px) {
+  /* The wrapped header is four rows tall on a phone; sticky would cover half the screen. */
+  .rd-header { position: static; gap: .5rem .75rem; }
+  .rd-brand { flex: 1 1 auto; min-width: 0; }
+  .rd-milestones { order: 3; width: 100%; }
+  .rd-search { order: 4; }
+  html { scroll-padding-top: 1rem; }
   .rd-menu { display: inline-block; }
   .rd-layout, .rd-layout--wide { display: block; }
   .rd-nav { display: none; position: static; max-height: none; border-bottom: 1px solid var(--rd-border); }
@@ -143,3 +149,30 @@ tr.is-active td { background: var(--rd-surface-2); font-weight: 600; }
   .rd-header, .rd-nav, .rd-toc, .rd-skip { display: none !important; }
   .rd-layout { display: block; }
 }
+
+/* Copy for AI: split button + dropdown. Hidden until redocs.js confirms it can copy. */
+.rd-copy { position: relative; display: inline-flex; align-items: center; margin-left: auto; }
+.rd-copy[hidden] { display: none; }
+.rd-copy__main, .rd-copy__toggle { background: var(--rd-surface-2); color: var(--rd-text); border: 1px solid var(--rd-border); cursor: pointer; font: inherit; font-size: .85rem; padding: .25rem .55rem; }
+.rd-copy__main { border-radius: var(--rd-radius) 0 0 var(--rd-radius); }
+.rd-copy__toggle { border-left: none; border-radius: 0 var(--rd-radius) var(--rd-radius) 0; padding: .25rem .4rem; }
+.rd-copy__main:hover, .rd-copy__toggle:hover, .rd-copy__toggle[aria-expanded="true"] { background: var(--rd-accent); color: var(--rd-accent-text); border-color: var(--rd-accent); }
+.rd-copy__menu { position: absolute; top: calc(100% + 4px); right: 0; z-index: 30; min-width: 15rem; margin: 0; padding: .25rem; list-style: none; background: var(--rd-surface); border: 1px solid var(--rd-border); border-radius: var(--rd-radius); box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+.rd-copy__menu[hidden] { display: none; }
+.rd-copy__menu button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--rd-text); font: inherit; font-size: .85rem; padding: .4rem .6rem; border-radius: 4px; cursor: pointer; }
+.rd-copy__menu button:hover, .rd-copy__menu button:focus { background: var(--rd-surface-2); outline: none; }
+.rd-copy__status { font-size: .8rem; color: var(--rd-ok); margin-left: .5rem; min-width: 3.5rem; }
+
+/* Comments: a static reflection of comments/<page-id>.jsonl in the book repository. */
+.rd-comments { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rd-border); }
+.rd-comments__title { font-size: 1.15rem; margin: 0 0 1rem; }
+.rd-comments__count { font-size: .8rem; font-weight: 400; color: var(--rd-muted); margin-left: .5rem; }
+.rd-comments__list, .rd-comment__replies { list-style: none; margin: 0; padding: 0; }
+.rd-comment { border: 1px solid var(--rd-border); border-radius: var(--rd-radius); background: var(--rd-surface); padding: .7rem .9rem; margin: 0 0 .75rem; }
+.rd-comment.is-resolved { opacity: .7; }
+.rd-comment__head { margin: 0 0 .35rem; font-size: .85rem; color: var(--rd-muted); }
+.rd-comment__author { font-weight: 600; color: var(--rd-text); }
+.rd-comment__anchor { font-size: .8rem; }
+.rd-comment__body { font-size: .95rem; }
+.rd-comment__replies { margin: .75rem 0 0 1rem; padding-left: .75rem; border-left: 2px solid var(--rd-border); }
+.rd-badge--resolved { background: var(--rd-ok); color: var(--rd-accent-text); }
