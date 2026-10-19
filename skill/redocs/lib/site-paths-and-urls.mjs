@@ -26,7 +26,7 @@ export const SITE = {
   homeOut: (milestone) => `${milestone}/index.html`,
   searchOut: (milestone) => `${milestone}/search-index.js`,
   agentIndexOut: (milestone) => `${milestone}/agent-index.js`,
-  chatScripts: ['_redocs/redocs-query.js', '_redocs/redocs-chat-stream.js', '_redocs/redocs-chat-agent.js', '_redocs/redocs-chat-store.js', '_redocs/redocs-chat-render.js', '_redocs/redocs-chat.js'],
+  chatScripts: ['_redocs/redocs-query.js', '_redocs/redocs-chat-stream.js', '_redocs/redocs-chat-agent.js', '_redocs/redocs-chat-store.js', '_redocs/markdown-it.min.js', '_redocs/redocs-chat-render.js', '_redocs/redocs-chat.js'],
   catalogIndexOut: (milestone) => `${milestone}/catalog/index.html`,
   catalogTypeOut: (milestone, type) => `${milestone}/catalog/${type}.html`,
   changesOut: (milestone, from) => `${milestone}/changes/${from}-to-${milestone}.html`,

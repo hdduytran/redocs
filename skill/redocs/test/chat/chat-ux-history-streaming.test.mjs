@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { test } from 'node:test';
+import markdownit from 'markdown-it';
 import '../../assets/theme/redocs-chat-stream.js';
 import '../../assets/theme/redocs-chat-agent.js';
 import '../../assets/theme/redocs-chat-store.js';
@@ -148,7 +149,7 @@ test('history store: bounded by count and size; survives a storage that refuses 
 });
 
 test('render: escapes model output, links valid refs, strikes unknown ones, renders steps and meta', () => {
-  const r = Render.create({ index, base: '../' });
+  const r = Render.create({ index, base: '../', markdownit });
   const html = r.markdown('**Bold** <img src=x onerror=alert(1)> `code` page:services/overview#billing page:nope entity:svc:gateway\n\n- a\n- b\n\n```js\nlet x = "<b>";\n```');
   assert.doesNotMatch(html, /<img/);
   assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
@@ -156,13 +157,49 @@ test('render: escapes model output, links valid refs, strikes unknown ones, rend
   assert.match(html, /<a class="rd-chat__ref" href="\.\.\/services\/overview\.html#billing" title="page:services\/overview#billing">Services › Billing<\/a>/);
   assert.match(html, /rd-chat__badref[^>]*>page:nope</);
   assert.match(html, /href="\.\.\/catalog\/service\.html#svc-gateway"[^>]*>Gateway</);
-  assert.match(html, /<ul><li>a<\/li><li>b<\/li><\/ul>/);
+  assert.match(html, /<ul>\n<li>a<\/li>\n<li>b<\/li>\n<\/ul>/);
   assert.match(html, /<pre><code>let x = &quot;&lt;b&gt;&quot;;\n<\/code><\/pre>/);
   const turn = r.turn({ role: 'assistant', text: 'OK', steps: ['Searching: retry'], invalid: 1, meta: 'qwen · 3s' });
   assert.match(turn, /1 step\(s\) in the book/);
   assert.match(turn, /1 cited reference\(s\) do not exist/);
   assert.match(turn, /qwen · 3s/);
   assert.equal(r.turn({ role: 'user', text: '<b>x</b>\ny' }), '<p>&lt;b&gt;x&lt;/b&gt;<br>y</p>');
+});
+
+test('render: full Markdown from the model -- headings, tables, nested lists, quotes, links', () => {
+  const r = Render.create({ index, base: '../', markdownit });
+  const html = r.markdown([
+    '## Kiến trúc', '', 'Đoạn đầu.', '', '### Bảng', '',
+    '| Service | DB |', '|---|:-:|', '| `page:services/overview` | **pg** |', '| gateway | - |', '',
+    '1. Một', '   - con a', '   - con b', '2. Hai', '',
+    '> Ghi chú *nghiêng*', '', '---', '',
+    '[Billing](page:services/overview#billing) [x](page:nope) [ext](https://example.com) [js](javascript:alert(1))',
+    '![img](https://example.com/a.png)',
+  ].join('\n'));
+  assert.match(html, /<h2>Kiến trúc<\/h2>/);
+  assert.match(html, /<h3>Bảng<\/h3>/);
+  assert.match(html, /<div class="rd-chat__table"><table>/);
+  assert.match(html, /<th>Service<\/th>/);
+  assert.match(html, /<th style="text-align:center">DB<\/th>/);
+  assert.match(html, /<td><a class="rd-chat__ref" href="\.\.\/services\/overview\.html"[^>]*>Services<\/a><\/td>/);
+  assert.match(html, /<td style="text-align:center"><strong>pg<\/strong><\/td>/);
+  assert.match(html, /<ol>\n<li>Một\n<ul>\n<li>con a<\/li>/, 'nested list');
+  assert.match(html, /<blockquote>\n<p>Ghi chú <em>nghiêng<\/em><\/p>/);
+  assert.match(html, /<hr>/);
+  assert.match(html, /<a href="\.\.\/services\/overview\.html#billing" class="rd-chat__ref" title="page:services\/overview#billing">Billing<\/a>/);
+  assert.match(html, /<a href="#" class="rd-chat__badref"[^>]*>x<\/a>/);
+  assert.match(html, /<a href="https:\/\/example\.com" target="_blank" rel="noopener noreferrer">ext<\/a>/);
+  assert.doesNotMatch(html, /href="javascript/, 'unsafe link schemes are not linked');
+  assert.doesNotMatch(html, /<img/, 'images never load remote URLs');
+  // Streaming: a half-written table still renders without throwing.
+  assert.match(r.markdown('| a | b |\n|---|---|\n| 1'), /<table>/);
+});
+
+test('render: built-in fallback when markdown-it is not loaded', () => {
+  const r = Render.create({ index, base: '../', markdownit: null });
+  const html = r.markdown('### Tiêu đề\n\n- a\n- b');
+  assert.match(html, /rd-chat__h/);
+  assert.match(html, /<ul><li>a<\/li><li>b<\/li><\/ul>/);
 });
 
 const chrome = findChrome();

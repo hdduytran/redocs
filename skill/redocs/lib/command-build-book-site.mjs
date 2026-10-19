@@ -2,6 +2,7 @@
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { buildCatalogPages, buildChangesPages, buildComparePages, buildHomePage } from './build-generated-pages.mjs';
 import { agentIndexScript, buildAgentIndexes } from './build-agent-index.mjs';
@@ -14,6 +15,12 @@ import { relativeHref, SITE } from './site-paths-and-urls.mjs';
 
 const themeDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'theme');
 const SEARCH_TEXT_LIMIT = 20000;
+// Chat answers are Markdown from the model; the panel renders them with the same parser the book
+// uses, shipped as markdown-it's own browser UMD build (a classic script, so it loads over file://).
+const vendorScripts = {
+  'markdown-it.min.js': () => path.join(path.dirname(createRequire(import.meta.url).resolve('markdown-it')), 'browser', 'markdown-it.umd.min.js'),
+};
+const chatScriptSource = (file) => { const name = path.basename(file); return vendorScripts[name] ? vendorScripts[name]() : path.join(themeDir, name); };
 
 /** Injected into every iframed HTML file so the parent can size the frame (verified in spikes/file-protocol). */
 export const RESIZE_SCRIPT = `<script data-redocs-resize>(function(){function s(){var b=document.body,d=document.documentElement;var h=b?Math.max(b.scrollHeight,b.offsetHeight+16):d.scrollHeight;try{parent.postMessage({type:'redocs:height',h:Math.ceil(h)},'*')}catch(e){}}if(window.ResizeObserver){new ResizeObserver(s).observe(document.body||document.documentElement)}addEventListener('load',s);s()})();</script>`;
@@ -114,7 +121,7 @@ export function buildBook(o) {
   // Opt-in Ask AI panel: the query engine, the tool loop and the UI, plus one agent index per milestone.
   const chat = book.config.chat?.enabled === true;
   const agentIndexes = chat ? buildAgentIndexes(book, rendered) : null;
-  if (chat) for (const file of SITE.chatScripts) writeOut(dist, file, readFileSync(path.join(themeDir, path.basename(file))), written);
+  if (chat) for (const file of SITE.chatScripts) writeOut(dist, file, readFileSync(chatScriptSource(file)), written);
   copyTree(path.join(book.root, 'assets'), path.join(dist, 'assets'), 'assets', written);
 
   for (const artifact of book.artifacts.values()) {
