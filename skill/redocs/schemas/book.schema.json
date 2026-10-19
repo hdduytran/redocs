@@ -9,6 +9,7 @@
   "properties": {
     "$schema": { "type": "string" },
     "schemaVersion": { "const": 1 },
+    "redocsVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "ReDocs version the book was last written or upgraded with. Missing = 0.1.0. Use `redocs upgrade` to change it." },
     "id": { "$ref": "#/$defs/slug" },
     "title": { "type": "string", "minLength": 1 },
     "subtitle": { "type": "string" },
@@ -49,6 +50,20 @@
       "type": "object",
       "description": "Per-plugin settings, e.g. { \"archify\": { \"path\": \"~/.kiro/crew/skills/archify\" } }.",
       "additionalProperties": { "type": "object" }
+    },
+    "chat": {
+      "type": "object",
+      "description": "Opt-in 'Ask AI' panel in the built book. Off by default. When enabled, the reader's question and the book sections the model asks for are sent to the LLM endpoint the reader configures (their own API key or a local model); nothing is sent until they press Send.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "provider": { "enum": ["anthropic", "openai-compatible"], "description": "Default provider shown to the reader; they can change it." },
+        "model": { "type": "string", "minLength": 1 },
+        "endpoint": { "type": "string", "pattern": "^https?://", "description": "Default endpoint; e.g. http://localhost:11434/v1/chat/completions for Ollama." },
+        "maxToolRounds": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "maxTokens": { "type": "integer", "minimum": 256, "maximum": 16384 },
+        "stream": { "type": "boolean", "description": "Stream replies token by token (default true; readers can turn it off)." }
+      }
     }
   },
   "$defs": {

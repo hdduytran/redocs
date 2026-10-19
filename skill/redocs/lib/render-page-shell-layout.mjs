@@ -47,6 +47,106 @@ function toc(headings) {
     .map((h) => `<li class="rd-toc__l${h.level}"><a href="#${encodeURIComponent(h.id)}">${escapeHtml(h.text)}</a></li>`).join('')}</ul></aside>`;
 }
 
+// Copy-for-AI toolbar: a split button. The main button copies path + content; the ▾ menu
+// copies other shapes. All logic is in redocs.js; this just carries the data in data-* and
+// inline <script> blocks so it works over file:// with no network.
+function copyToolbar() {
+  return `<div class="rd-copy" data-rd-copy hidden>
+  <button type="button" class="rd-copy__main" data-rd-copy-action="path-content" title="Copy page path and content for an AI">⧉ Copy for AI</button>
+  <button type="button" class="rd-copy__toggle" aria-haspopup="true" aria-expanded="false" aria-label="More copy options">▾</button>
+  <ul class="rd-copy__menu" role="menu" hidden>
+    <li role="none"><button role="menuitem" type="button" data-rd-copy-action="path-content">Path + content (Markdown)</button></li>
+    <li role="none"><button role="menuitem" type="button" data-rd-copy-action="ai-context">AI context block</button></li>
+    <li role="none"><button role="menuitem" type="button" data-rd-copy-action="content">Content only</button></li>
+    <li role="none"><button role="menuitem" type="button" data-rd-copy-action="path">Path only (page: ref)</button></li>
+    <li role="none"><button role="menuitem" type="button" data-rd-copy-action="citation">Citation link</button></li>
+    <li role="none"><button role="menuitem" type="button" data-rd-copy-action="deep-link">Deep link (file://)</button></li>
+  </ul>
+  <span class="rd-copy__status" role="status" aria-live="polite"></span>
+</div>`;
+}
+
+// Ask AI panel (book.json chat.enabled). Markup only: redocs-chat.js reveals the toggle once
+// the agent index and chat scripts have loaded, so a reader without JS never sees a dead button.
+// On wide screens the panel docks to the right and pushes the page left (no overlay).
+function chatPanel() {
+  return `<aside id="rd-chat" class="rd-chat" aria-labelledby="rd-chat-title" hidden>
+  <div class="rd-chat__resize" role="separator" aria-orientation="vertical" aria-label="Resize chat panel (arrow keys)" tabindex="0"></div>
+  <div class="rd-chat__head">
+    <h2 id="rd-chat-title" class="rd-chat__title">Ask this book</h2>
+    <button type="button" class="rd-chat__history-btn" aria-pressed="false" aria-controls="rd-chat-history">History</button>
+    <button type="button" class="rd-chat__new">New chat</button>
+    <button type="button" class="rd-chat__expand" aria-pressed="false" aria-label="Widen chat panel" title="Widen / narrow">⇔</button>
+    <button type="button" class="rd-chat__close" aria-label="Close chat">×</button>
+  </div>
+  <details class="rd-chat__settings">
+    <summary>Model settings</summary>
+    <label>Provider <select name="provider"><option value="anthropic">Anthropic (your API key)</option><option value="openai-compatible">OpenAI-compatible (vLLM, Ollama, LM Studio, gateway)</option></select></label>
+    <label>Endpoint <input name="endpoint" type="url" autocomplete="off" spellcheck="false" placeholder="http://host:8000 or …/v1/chat/completions"></label>
+    <div class="rd-chat__model">
+      <label for="rd-chat-model">Model</label>
+      <div class="rd-chat__model-row"><select id="rd-chat-model" name="model"></select><button type="button" class="rd-chat__models-refresh" aria-label="Reload models from the endpoint" title="Reload models (GET /v1/models)">↻</button></div>
+      <span class="rd-chat__models-status rd-muted" role="status" aria-live="polite"></span>
+    </div>
+    <label>API key <input name="key" type="password" autocomplete="off" spellcheck="false"></label>
+    <label class="rd-chat__check"><input name="remember" type="checkbox"> Remember the key on this device</label>
+    <label class="rd-chat__check"><input name="stream" type="checkbox" checked> Stream replies as they are written</label>
+  </details>
+  <section id="rd-chat-history" class="rd-chat__history" aria-label="Chat history" hidden>
+    <div class="rd-chat__history-bar">
+      <label class="rd-visually-hidden" for="rd-chat-history-filter">Filter conversations</label>
+      <input id="rd-chat-history-filter" type="search" placeholder="Filter conversations…" autocomplete="off">
+      <button type="button" class="rd-chat__history-clear">Clear all</button>
+    </div>
+    <ul class="rd-chat__history-list"></ul>
+    <p class="rd-chat__history-note rd-muted">Conversations are saved in this browser only.</p>
+  </section>
+  <div class="rd-chat__log" role="log" aria-live="polite" aria-label="Conversation"></div>
+  <div class="rd-chat__status" role="status" aria-live="polite" hidden><span class="rd-chat__dots" aria-hidden="true"><span></span><span></span><span></span></span><span class="rd-chat__status-text"></span><span class="rd-chat__elapsed"></span></div>
+  <form class="rd-chat__form">
+    <label class="rd-visually-hidden" for="rd-chat-input">Your question</label>
+    <textarea id="rd-chat-input" rows="3" placeholder="Ask about this system… (Enter to send, Shift+Enter for a new line)"></textarea>
+    <div class="rd-chat__actions"><button type="submit" class="rd-chat__send">Send</button><button type="button" class="rd-chat__stop" hidden>Stop</button></div>
+  </form>
+  <p class="rd-chat__privacy rd-muted"></p>
+</aside>`;
+}
+
+function commentBody(body) {
+  // Comment bodies are plain text (authored via the CLI or by hand). Escape, keep line breaks,
+  // and turn bare page:/entity refs into text only — no network, no HTML injection.
+  return escapeHtml(body).replace(/\n/g, '<br>');
+}
+
+/**
+ * Render the page's review thread from loader Comment objects. Top-level comments in file order,
+ * replies nested under their parent. A static reflection of comments/<page-id>.jsonl in the repo.
+ */
+function commentThread(comments) {
+  if (!comments || !comments.length) {
+    return `<section class="rd-comments" aria-label="Comments"><h2 class="rd-comments__title">Comments</h2><p class="rd-muted">No comments yet. Add one with <code>redocs comment &lt;book&gt; &lt;page-id&gt; --author "..." --body "..."</code> and commit it.</p></section>`;
+  }
+  const byParent = new Map();
+  for (const c of comments) {
+    const key = c.reply_to || '';
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key).push(c);
+  }
+  const renderOne = (c) => {
+    const replies = (byParent.get(c.id) || []).map(renderOne).join('');
+    const when = c.created ? `<time datetime="${escapeHtml(c.created)}">${escapeHtml(c.created)}</time>` : '';
+    const anchor = c.anchor ? ` <a class="rd-comment__anchor" href="#${encodeURIComponent(c.anchor)}">on #${escapeHtml(c.anchor)}</a>` : '';
+    const resolved = c.resolved ? ' <span class="rd-badge rd-badge--resolved">resolved</span>' : '';
+    return `<li class="rd-comment${c.resolved ? ' is-resolved' : ''}" id="comment-${escapeHtml(c.id)}">
+  <p class="rd-comment__head"><span class="rd-comment__author">${escapeHtml(c.author)}</span> ${when}${anchor}${resolved}</p>
+  <div class="rd-comment__body">${commentBody(c.body)}</div>${replies ? `<ul class="rd-comment__replies">${replies}</ul>` : ''}
+</li>`;
+  };
+  const roots = (byParent.get('') || []);
+  const open = roots.filter((c) => !c.resolved).length;
+  return `<section class="rd-comments" aria-label="Comments"><h2 class="rd-comments__title">Comments <span class="rd-comments__count">${comments.length} · ${open} open</span></h2><ul class="rd-comments__list">${roots.map(renderOne).join('')}</ul></section>`;
+}
+
 /**
  * @param {object} o
  * @param {object} o.book
@@ -60,6 +160,10 @@ function toc(headings) {
  * @param {string} [o.footerHtml] trusted HTML
  * @param {string} [o.kind]
  * @param {boolean} [o.wide] hide the TOC column (compare pages)
+ * @param {object} [o.copyMeta] data for the copy-for-AI button: {pageRef, title, milestone, kind, entities, pageUrl}
+ * @param {string} [o.sourceText] the page's own Markdown/HTML source (copied verbatim)
+ * @param {string} [o.sourceFormat] 'md' | 'html' | 'none'
+ * @param {import('./load-book-from-directory.mjs').Comment[]} [o.comments] review thread for this page
  */
 export function renderShell(o) {
   const { book, milestone, outFile } = o;
@@ -74,6 +178,26 @@ export function renderShell(o) {
   const searchBase = toMilestoneRoot ? `${toMilestoneRoot}/` : '';
   const notices = (o.notices || []).map((n) => `<div class="rd-notice" role="note">${n}</div>`).join('');
   const kind = o.kind ? `<span class="rd-kind">${escapeHtml(o.kind)}</span>` : '';
+  // Serialise copy data for the client. `<` is escaped so the closing </script> can never appear.
+  const safeJson = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
+  const copyData = o.copyMeta
+    ? `<script type="application/json" id="rd-copy-meta">${safeJson({ ...o.copyMeta, sourceFormat: o.sourceFormat || 'none' })}</script>
+<script type="text/plain" id="rd-copy-source">${escapeHtml(o.sourceText || '').replace(/<\/script/gi, '<\\/script')}</script>`
+    : '';
+  const copy = o.copyMeta ? copyToolbar() : '';
+  const comments = o.comments !== undefined ? commentThread(o.comments) : '';
+  const chat = book.config.chat?.enabled === true;
+  // Docked panel: apply the open state and width before first paint so the page does not jump.
+  const chatEarly = chat
+    ? `\n<script>try{var w=Number(localStorage.getItem('redocs-chat-width'));if(w>0)document.documentElement.style.setProperty('--rd-chat-width',w+'px');var c=JSON.parse(sessionStorage.getItem(${safeJson(`redocs-chat-state:${book.config.id}`)})||'null');if(c&&c.open&&!/[?&]embed=1/.test(location.search))document.documentElement.classList.add('rd-chat-open');}catch(e){}</script>`
+    : '';
+  const chatToggle = chat ? '<button class="rd-chat-toggle" type="button" aria-controls="rd-chat" aria-expanded="false" hidden>✦ Ask AI</button>' : '';
+  const chatData = chat
+    ? `${chatPanel()}
+<script type="application/json" id="rd-chat-config">${safeJson({ chat: book.config.chat, page: o.copyMeta?.pageRef || null, base: searchBase })}</script>
+<script src="${relativeHref(outFile, SITE.agentIndexOut(milestone))}"></script>
+${SITE.chatScripts.map((s) => `<script src="${relativeHref(outFile, s)}"></script>`).join('\n')}`
+    : '';
   return `<!doctype html>
 <html lang="${escapeHtml(lang)}" data-milestone="${escapeHtml(milestone)}">
 <head>
@@ -81,7 +205,7 @@ export function renderShell(o) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="ReDocs">
 <title>${escapeHtml(o.title)} · ${escapeHtml(book.config.title)} (${escapeHtml(m?.label || milestone)})</title>
-<script>try{var t=localStorage.getItem('redocs-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<script>try{var t=localStorage.getItem('redocs-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>${chatEarly}
 <link rel="stylesheet" href="${css}">
 </head>
 <body>
@@ -96,21 +220,25 @@ export function renderShell(o) {
     <ul id="rd-search-results" class="rd-search__results" role="listbox" hidden></ul>
   </div>
   <button class="rd-theme" type="button" aria-label="Toggle dark mode">◐</button>
+  ${chatToggle}
 </header>
 <div class="rd-layout${o.wide ? ' rd-layout--wide' : ''}">
 ${sidebar({ book, milestone, outFile, activeFile: outFile })}
 <main id="rd-main" class="rd-main" tabindex="-1">
-  <p class="rd-context"><span class="rd-badge rd-badge--ms rd-badge--${escapeHtml(m?.status || '')}">${escapeHtml(m?.label || milestone)} · ${escapeHtml(m?.status || '')}</span>${kind}</p>
+  <div class="rd-context"><span class="rd-badge rd-badge--ms rd-badge--${escapeHtml(m?.status || '')}">${escapeHtml(m?.label || milestone)} · ${escapeHtml(m?.status || '')}</span>${kind}${copy}</div>
   ${notices}
   <article class="rd-article">
 ${o.bodyHtml}
   </article>
   ${o.footerHtml ? `<footer class="rd-page-footer">${o.footerHtml}</footer>` : ''}
+  ${comments}
 </main>
 ${o.wide ? '' : toc(o.headings)}
 </div>
+${copyData}
 <script src="${search}"></script>
 <script src="${js}"></script>
+${chatData}
 </body>
 </html>
 `;

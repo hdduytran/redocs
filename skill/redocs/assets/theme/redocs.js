@@ -35,6 +35,99 @@
     });
   }
 
+  // Copy for AI: a split button. Works over file:// using navigator.clipboard (write needs a
+  // user gesture, which a click is) with a textarea+execCommand fallback. Data comes from two
+  // inline blocks the builder wrote: #rd-copy-meta (JSON) and #rd-copy-source (verbatim source).
+  (function () {
+    var toolbar = document.querySelector('[data-rd-copy]');
+    if (!toolbar) return;
+    var metaEl = document.getElementById('rd-copy-meta');
+    var sourceEl = document.getElementById('rd-copy-source');
+    var meta = {};
+    try { meta = JSON.parse(metaEl ? metaEl.textContent : '{}'); } catch (e) { meta = {}; }
+    var source = sourceEl ? sourceEl.textContent : '';
+    var status = toolbar.querySelector('.rd-copy__status');
+    var toggle = toolbar.querySelector('.rd-copy__toggle');
+    var menuEl = toolbar.querySelector('.rd-copy__menu');
+    toolbar.hidden = false; // only shown once JS can actually copy
+
+    function deepLink() {
+      // Strip any existing hash; keep the current section if the reader scrolled to one.
+      return location.href;
+    }
+    function build(action) {
+      var ref = meta.pageRef || '';
+      var title = meta.title || document.title;
+      switch (action) {
+        case 'path': return ref;
+        case 'content': return source;
+        case 'citation': return '[' + title + '](' + ref + ') · ' + (meta.milestone || '');
+        case 'deep-link': return deepLink();
+        case 'ai-context':
+          return [
+            '--- redocs-context ---',
+            'page: ' + ref,
+            'title: ' + title,
+            'book: ' + (meta.bookTitle || ''),
+            'milestone: ' + (meta.milestone || ''),
+            'kind: ' + (meta.kind || ''),
+            'entities: ' + ((meta.entities || []).join(', ') || '(none)'),
+            'format: ' + (meta.sourceFormat || 'none'),
+            'url: ' + deepLink(),
+            '--- content ---',
+            source,
+          ].join('\n');
+        case 'path-content':
+        default:
+          return '# ' + ref + '\n\n' + source;
+      }
+    }
+    function flash(msg) {
+      if (!status) return;
+      status.textContent = msg;
+      clearTimeout(flash._t);
+      flash._t = setTimeout(function () { status.textContent = ''; }, 2000);
+    }
+    function copy(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { flash('Copied'); }, fallback);
+      } else {
+        fallback();
+      }
+      function fallback() {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'absolute';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          flash('Copied');
+        } catch (e) {
+          flash('Press Ctrl/Cmd+C');
+        }
+      }
+    }
+    function openMenu(open) {
+      menuEl.hidden = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+    }
+    toolbar.addEventListener('click', function (event) {
+      var actionEl = event.target.closest('[data-rd-copy-action]');
+      if (actionEl) { copy(build(actionEl.getAttribute('data-rd-copy-action'))); openMenu(false); return; }
+      if (event.target === toggle || toggle.contains(event.target)) { openMenu(menuEl.hidden); }
+    });
+    document.addEventListener('click', function (event) {
+      if (!toolbar.contains(event.target)) openMenu(false);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !menuEl.hidden) { openMenu(false); toggle.focus(); }
+    });
+  }());
+
   // Size iframes from the height their document reports (artifacts, standalone pages, compare).
   window.addEventListener('message', function (event) {
     var data = event.data;

@@ -3,6 +3,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { REDOCS_VERSION } from './redocs-version.mjs';
 import { ID_PATTERNS, RedocsError, today } from './shared-helpers.mjs';
 
 const templateRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'templates', 'book-starter');
@@ -54,6 +55,7 @@ export function initBook({ dir, name, title, language = 'en', force = false }) {
     BOOK_TITLE: (title || `${name} System Design Book`).replace(/["\\]/g, ''),
     LANGUAGE: language,
     TODAY: today(),
+    REDOCS_VERSION,
   };
   copyTemplate(templateRoot, root, tokens);
   return { ok: true, command: 'init', book: root, id: name, title: tokens.BOOK_TITLE };

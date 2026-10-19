@@ -3,12 +3,13 @@
 //
 // dist/
 // ├── index.html                     -> redirect to <current>/index.html
-// ├── _redocs/{redocs.css,redocs.js} shared theme
+// ├── _redocs/{redocs.css,redocs.js} shared theme (+ redocs-query/-chat-agent/-chat.js with chat)
 // ├── assets/...                     copied book assets
 // ├── artifacts/<id>/<output>        copied artifacts (resize script injected)
 // └── <milestone>/
 //     ├── index.html                 book home at this milestone
 //     ├── search-index.js
+//     ├── agent-index.js             only when book.json chat.enabled (Ask AI panel)
 //     ├── <page-id>.html
 //     ├── _standalone/<page-id>.html standalone HTML sources shown in an iframe
 //     ├── catalog/index.html, catalog/<type>.html
@@ -24,6 +25,8 @@ export const SITE = {
   standaloneOut: (milestone, pageId) => `${milestone}/_standalone/${pageId}.html`,
   homeOut: (milestone) => `${milestone}/index.html`,
   searchOut: (milestone) => `${milestone}/search-index.js`,
+  agentIndexOut: (milestone) => `${milestone}/agent-index.js`,
+  chatScripts: ['_redocs/redocs-query.js', '_redocs/redocs-chat-stream.js', '_redocs/redocs-chat-agent.js', '_redocs/redocs-chat-store.js', '_redocs/markdown-it.min.js', '_redocs/redocs-chat-render.js', '_redocs/redocs-chat.js'],
   catalogIndexOut: (milestone) => `${milestone}/catalog/index.html`,
   catalogTypeOut: (milestone, type) => `${milestone}/catalog/${type}.html`,
   changesOut: (milestone, from) => `${milestone}/changes/${from}-to-${milestone}.html`,

@@ -8,13 +8,30 @@
 // RD004 unknown entity                   RD011 open TODO(owner) question (warning)
 // RD005 entity not alive at milestone    RD012 milestone / chapter declaration
 // RD006 page variants and source files
+// RD013 comment references a missing page, anchor or reply target
+// RD014 book written with an older (warning) or newer (error) ReDocs than this skill
 
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import { bookVersion, compareVersions, REDOCS_VERSION } from './redocs-version.mjs';
 import { renderedKey } from './render-book-pages.mjs';
 import { diagnostic, sha256File } from './shared-helpers.mjs';
 
-export const RULE_CODES = ['RD000', 'RD001', 'RD002', 'RD003', 'RD004', 'RD005', 'RD006', 'RD007', 'RD008', 'RD009', 'RD010', 'RD011', 'RD012'];
+export const RULE_CODES = ['RD000', 'RD001', 'RD002', 'RD003', 'RD004', 'RD005', 'RD006', 'RD007', 'RD008', 'RD009', 'RD010', 'RD011', 'RD012', 'RD013', 'RD014'];
+
+function ruleSkillVersion(book, out) {
+  const version = bookVersion(book.config);
+  const order = compareVersions(version, REDOCS_VERSION);
+  if (order < 0) {
+    out.push(diagnostic('RD014', 'warning', `Book format is ReDocs ${version}; this skill is ${REDOCS_VERSION}`, {
+      file: 'book.json', pointer: '/redocsVersion', hint: 'Run `redocs upgrade <book>` to see what changed, then `redocs upgrade <book> --apply`.',
+    }));
+  } else if (order > 0) {
+    out.push(diagnostic('RD014', 'error', `Book was written with ReDocs ${version}, newer than this skill (${REDOCS_VERSION})`, {
+      file: 'book.json', pointer: '/redocsVersion', hint: 'Update the ReDocs skill.',
+    }));
+  }
+}
 
 function ruleMilestonesAndChapters(book, out) {
   const ids = book.milestones.map((m) => m.id);
@@ -135,18 +152,52 @@ function ruleEntityGraph(book, out) {
 }
 
 /**
+ * RD013: comment threads must target a real page, a heading that exists on it, and a reply
+ * target in the same thread. Comments are page-scoped (not per milestone); anchors are checked
+ * against the current milestone's rendering of that page.
+ */
+function ruleComments(book, rendered, out) {
+  const currentId = (book.milestones.find((m) => m.status === 'current') || book.milestones[0])?.id;
+  for (const [pageId, list] of book.comments) {
+    const file = `comments/${pageId}.jsonl`;
+    if (!book.pages.has(pageId)) {
+      out.push(diagnostic('RD013', 'error', `Comments file targets unknown page '${pageId}'`, { file, hint: 'Rename the file to comments/<existing-page-id>.jsonl, or remove it.' }));
+      continue;
+    }
+    const ids = new Set(list.map((c) => c.id));
+    const dupes = new Set();
+    const seen = new Set();
+    const target = currentId ? rendered.get(renderedKey(currentId, pageId)) : null;
+    const headingIds = new Set((target?.headings || []).map((h) => h.id));
+    for (const c of list) {
+      if (seen.has(c.id)) dupes.add(c.id);
+      seen.add(c.id);
+      if (c.anchor && target && !headingIds.has(c.anchor)) {
+        out.push(diagnostic('RD013', 'warning', `Comment '${c.id}' is anchored to '#${c.anchor}', which no heading on '${pageId}' matches`, { file, line: c._line, hint: `Headings: ${[...headingIds].slice(0, 8).join(', ') || '(none)'}` }));
+      }
+      if (c.reply_to && !ids.has(c.reply_to)) {
+        out.push(diagnostic('RD013', 'error', `Comment '${c.id}' replies to unknown comment '${c.reply_to}'`, { file, line: c._line }));
+      }
+    }
+    for (const id of dupes) out.push(diagnostic('RD013', 'error', `Duplicate comment id '${id}' in ${file}`, { file }));
+  }
+}
+
+/**
  * Run every rule. `rendered` + `renderDiagnostics` come from renderBookPages (RD003-RD009, RD011).
  * @returns {import('./shared-helpers.mjs').Diagnostic[]}
  */
 export function runCheckRules(book, rendered, renderDiagnostics) {
   const out = [...book.diagnostics];
   if (!book.config) return out;
+  ruleSkillVersion(book, out);
   ruleMilestonesAndChapters(book, out);
   ruleChapterPages(book, out);
   ruleVariants(book, out);
   ruleEntityGraph(book, out);
   ruleLinksAndAnchors(book, rendered, out);
   ruleArtifacts(book, rendered, out);
+  ruleComments(book, rendered, out);
   out.push(...renderDiagnostics);
   // Same problem reported at several milestones -> once.
   const seen = new Set();

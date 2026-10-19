@@ -20,6 +20,8 @@ import { relativeHref, SITE } from './site-paths-and-urls.mjs';
  * @property {Array<{level:number,text:string,id:string}>} headings
  * @property {object} ctx render context (links, entityRefs, embeds, assets)
  * @property {{from: string, to: string}|null} standalone copy job for standalone HTML pages
+ * @property {string} rawSource the page's own Markdown/HTML source at this milestone (for copy-for-AI)
+ * @property {string} sourceFormat 'md' | 'html' | 'none'
  */
 
 export function renderedKey(milestone, pageId) {
@@ -52,6 +54,8 @@ export function renderBookPages(book) {
       let bodyHtml;
       let headings = [];
       let standalone = null;
+      let rawSource = '';
+      let sourceFormat = 'none';
 
       if (!resolved) {
         const first = Object.keys(page.variants)[0];
@@ -63,18 +67,22 @@ export function renderBookPages(book) {
           bodyHtml = `<h1>${escapeHtml(page.meta.title)}</h1>\n<p class="rd-absent">Source file missing.</p>`;
         } else {
           const source = readFileSync(absolute, 'utf8');
+          rawSource = source;
           if (!scannedSources.has(sourceFile)) {
             scannedSources.add(sourceFile);
             scanTodoMarkers(source, sourceFile, ctx.diagnostics);
             scanRemoteResources(source, sourceFile, ctx.diagnostics);
           }
           if (resolved.file.endsWith('.md')) {
+            sourceFormat = 'md';
             ({ html: bodyHtml, headings } = renderMarkdown(source, ctx));
           } else if (page.meta.standalone) {
+            sourceFormat = 'html';
             const to = SITE.standaloneOut(milestone, page.id);
             standalone = { from: absolute, to };
             bodyHtml = `<h1 class="rd-visually-hidden">${escapeHtml(page.meta.title)}</h1>\n<figure class="rd-embed rd-embed--page"><iframe class="rd-embed__frame" src="${relativeHref(outFile, to)}" title="${escapeHtml(page.meta.title)}" height="900" data-max-height="4000"></iframe><a class="rd-embed__open" href="${relativeHref(outFile, to)}" target="_blank" rel="noopener">Open full screen</a></figure>`;
           } else {
+            sourceFormat = 'html';
             ({ html: bodyHtml, headings } = renderHtmlFragment(source, ctx));
           }
         }
@@ -84,7 +92,7 @@ export function renderBookPages(book) {
       const declared = (page.meta.entities || []).map((id) => renderEntityChip({ ...ctx, sourceFile: page.metaFile }, id, undefined, undefined));
       ctx.declaredEntitiesHtml = declared;
       diagnostics.push(...ctx.diagnostics);
-      pages.set(renderedKey(milestone, page.id), { milestone, page, resolved, outFile, bodyHtml, headings, ctx, standalone });
+      pages.set(renderedKey(milestone, page.id), { milestone, page, resolved, outFile, bodyHtml, headings, ctx, standalone, rawSource, sourceFormat });
     }
   }
   return { pages, diagnostics: dedupe(diagnostics) };

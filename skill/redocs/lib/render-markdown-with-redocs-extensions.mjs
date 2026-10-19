@@ -48,7 +48,8 @@ function createMarkdown() {
         const text = inlineText(state.tokens[index + 1]);
         const id = nextSlug(text);
         token.attrSet('id', id);
-        state.env.headings.push({ level: Number(token.tag.slice(1)), text, id });
+        // `line` (0-based source line) lets the agent index cut the source into sections.
+        state.env.headings.push({ level: Number(token.tag.slice(1)), text, id, line: token.map ? token.map[0] : undefined });
       }
       if (token.type !== 'inline' || !token.children) return;
       for (const child of token.children) {
@@ -89,7 +90,7 @@ function createMarkdown() {
 
 let shared;
 
-/** @returns {{html: string, headings: Array<{level:number,text:string,id:string}>}} */
+/** @returns {{html: string, headings: Array<{level:number,text:string,id:string,line?:number}>}} */
 export function renderMarkdown(source, ctx) {
   shared ||= createMarkdown();
   const env = { ctx };

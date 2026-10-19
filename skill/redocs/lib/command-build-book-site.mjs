@@ -2,8 +2,10 @@
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { buildCatalogPages, buildChangesPages, buildComparePages, buildHomePage } from './build-generated-pages.mjs';
+import { agentIndexScript, buildAgentIndexes } from './build-agent-index.mjs';
 import { loadBook } from './load-book-from-directory.mjs';
 import { comparisonPairs, currentMilestone, resolveVariant } from './milestone-order-and-lifecycle.mjs';
 import { renderBookPages, renderedKey } from './render-book-pages.mjs';
@@ -13,6 +15,12 @@ import { relativeHref, SITE } from './site-paths-and-urls.mjs';
 
 const themeDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'theme');
 const SEARCH_TEXT_LIMIT = 20000;
+// Chat answers are Markdown from the model; the panel renders them with the same parser the book
+// uses, shipped as markdown-it's own browser UMD build (a classic script, so it loads over file://).
+const vendorScripts = {
+  'markdown-it.min.js': () => path.join(path.dirname(createRequire(import.meta.url).resolve('markdown-it')), 'browser', 'markdown-it.umd.min.js'),
+};
+const chatScriptSource = (file) => { const name = path.basename(file); return vendorScripts[name] ? vendorScripts[name]() : path.join(themeDir, name); };
 
 /** Injected into every iframed HTML file so the parent can size the frame (verified in spikes/file-protocol). */
 export const RESIZE_SCRIPT = `<script data-redocs-resize>(function(){function s(){var b=document.body,d=document.documentElement;var h=b?Math.max(b.scrollHeight,b.offsetHeight+16):d.scrollHeight;try{parent.postMessage({type:'redocs:height',h:Math.ceil(h)},'*')}catch(e){}}if(window.ResizeObserver){new ResizeObserver(s).observe(document.body||document.documentElement)}addEventListener('load',s);s()})();</script>`;
@@ -110,6 +118,10 @@ export function buildBook(o) {
   const written = [];
 
   for (const name of ['redocs.css', 'redocs.js']) writeOut(dist, `_redocs/${name}`, readFileSync(path.join(themeDir, name)), written);
+  // Opt-in Ask AI panel: the query engine, the tool loop and the UI, plus one agent index per milestone.
+  const chat = book.config.chat?.enabled === true;
+  const agentIndexes = chat ? buildAgentIndexes(book, rendered) : null;
+  if (chat) for (const file of SITE.chatScripts) writeOut(dist, file, readFileSync(chatScriptSource(file)), written);
   copyTree(path.join(book.root, 'assets'), path.join(dist, 'assets'), 'assets', written);
 
   for (const artifact of book.artifacts.values()) {
@@ -138,6 +150,17 @@ export function buildBook(o) {
       const html = renderShell({
         book, milestone, outFile: r.outFile, title: page.meta.title, bodyHtml: r.bodyHtml, headings: r.headings,
         switchTargets, notices: pageNotices(book, r), footerHtml: pageFooter(book, r), kind: page.meta.kind,
+        copyMeta: {
+          pageRef: `page:${page.id}`,
+          title: page.meta.title,
+          milestone,
+          kind: page.meta.kind,
+          entities: page.meta.entities || [],
+          bookTitle: book.config.title,
+        },
+        sourceText: r.rawSource,
+        sourceFormat: r.sourceFormat,
+        comments: book.comments.get(page.id) || [],
       });
       writeOut(dist, r.outFile, html, written);
       pageCount += 1;
@@ -163,6 +186,7 @@ export function buildBook(o) {
     for (const g of generated) writeOut(dist, g.outFile, g.html, written);
     pageCount += generated.length;
     writeOut(dist, SITE.searchOut(milestone), `window.__REDOCS_SEARCH=${JSON.stringify(search)};\n`, written);
+    if (chat) writeOut(dist, SITE.agentIndexOut(milestone), agentIndexScript(agentIndexes.get(milestone)), written);
   }
 
   const htmlFiles = written.filter((f) => f.endsWith('.html') && !f.startsWith('artifacts/') && !f.startsWith('assets/')).sort();
@@ -171,12 +195,13 @@ export function buildBook(o) {
   return {
     ok: true,
     command: 'build',
-    summary: `OK build: ${pageCount} pages × ${book.milestones.length} milestone(s) -> ${dist}\n  open: ${path.join(dist, 'index.html')}\n  distHash: ${distHash}${errors ? `\n  note: ${errors} content error(s); run \`redocs check\`` : ''}`,
+    summary: `OK build: ${pageCount} pages × ${book.milestones.length} milestone(s) -> ${dist}\n  open: ${path.join(dist, 'index.html')}\n  distHash: ${distHash}${chat ? '\n  chat: Ask AI panel enabled (readers send questions to the LLM endpoint they configure)' : ''}${errors ? `\n  note: ${errors} content error(s); run \`redocs check\`` : ''}`,
     dist,
     milestones: book.milestones.map((m) => m.id),
     pages: pageCount,
     files: written.length,
     contentErrors: errors,
+    chat,
     distHash,
     htmlFiles,
   };

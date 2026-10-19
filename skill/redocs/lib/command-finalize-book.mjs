@@ -6,11 +6,12 @@ import path from 'node:path';
 import { checkFilePages } from './chrome-cdp-file-protocol-check.mjs';
 import { buildBook } from './command-build-book-site.mjs';
 import { checkBookModel } from './command-check-book.mjs';
+import { REDOCS_VERSION } from './redocs-version.mjs';
 
 const MAX_REPORTED = 20;
 
 export async function finalizeBook({ book: bookDir, strict = false, skipBrowser = false, allowSkipBrowser = false }) {
-  const receipt = { ok: false, command: 'finalize', redocsVersion: '0.1.0', checks: null, build: null, browser: null };
+  const receipt = { ok: false, command: 'finalize', redocsVersion: REDOCS_VERSION, checks: null, build: null, browser: null };
   const check = checkBookModel(bookDir, { strict });
   receipt.checks = { ok: check.ok, errors: check.errors, warnings: check.warnings };
   const finish = (summary) => {

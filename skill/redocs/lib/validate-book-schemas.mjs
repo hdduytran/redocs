@@ -13,6 +13,7 @@ const SCHEMA_FILES = {
   entityFile: 'entity-file.schema.json',
   receipt: 'artifact-receipt.schema.json',
   plugin: 'plugin.schema.json',
+  comment: 'comment.schema.json',
 };
 
 let compiled;
@@ -34,7 +35,7 @@ function describe(error) {
 
 /**
  * Validate `value` against one of the bundled schemas.
- * @param {'book'|'page'|'entityFile'|'receipt'|'plugin'} kind
+ * @param {'book'|'page'|'entityFile'|'receipt'|'plugin'|'comment'} kind
  * @returns {import('./shared-helpers.mjs').Diagnostic[]}
  */
 export function validateAgainstSchema(kind, value, file) {

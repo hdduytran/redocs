@@ -112,10 +112,12 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /**
  * Open each HTML file through file:// and collect console errors, uncaught exceptions and
  * failed resource loads. `evaluate` (optional) is a JS expression whose JSON value is
- * returned per page after `settleMs`.
+ * returned per page after `settleMs`. `next` ({file, evaluate}) then navigates the same tab to a
+ * second file and returns that evaluation as `nextValue`.
  *
  * @param {string[]} files absolute paths of HTML files
  * @param {{chromePath?: string, settleMs?: number, pageTimeoutMs?: number, evaluate?: string,
+ *          next?: {file: string, evaluate?: string},
  *          ignoreFailedUrl?: (url: string) => boolean, screenshot?: (file: string) => string,
  *          viewport?: {width?: number, height?: number, dark?: boolean}}} options
  * @returns {Promise<{chrome: string, pages: Array<{file: string, url: string, consoleErrors: string[],
@@ -161,7 +163,7 @@ export async function checkFilePages(files, options = {}) {
     await withTimeout(cdp.send('Browser.getVersion'), STARTUP_TIMEOUT_MS, 'Chrome startup');
     for (const file of files) {
       pages.push(await checkOnePage(cdp, file, {
-        settleMs, pageTimeoutMs, evaluate: options.evaluate, ignoreFailedUrl,
+        settleMs, pageTimeoutMs, evaluate: options.evaluate, next: options.next, ignoreFailedUrl,
         screenshot: options.screenshot, viewport: { width: 1280, height: 900, ...options.viewport },
       }));
     }
@@ -177,7 +179,7 @@ export async function checkFilePages(files, options = {}) {
   return { chrome: chromePath, pages };
 }
 
-async function checkOnePage(cdp, file, { settleMs, pageTimeoutMs, evaluate, ignoreFailedUrl, screenshot, viewport }) {
+async function checkOnePage(cdp, file, { settleMs, pageTimeoutMs, evaluate, next, ignoreFailedUrl, screenshot, viewport }) {
   const url = pathToFileURL(file).href;
   const result = { file, url, consoleErrors: [], failedRequests: [] };
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
@@ -222,6 +224,18 @@ async function checkOnePage(cdp, file, { settleMs, pageTimeoutMs, evaluate, igno
     if (evaluate) {
       const response = await cdp.send('Runtime.evaluate', { expression: evaluate, returnByValue: true, awaitPromise: true }, sessionId);
       result.value = response.exceptionDetails ? { error: response.exceptionDetails.text } : response.result?.value;
+    }
+    if (next) {
+      // A second page in the SAME tab (sessionStorage, history survive), e.g. "reader clicks a link".
+      const nextLoaded = new Promise((resolve) => { loaded = resolve; });
+      const second = await cdp.send('Page.navigate', { url: pathToFileURL(next.file).href }, sessionId);
+      if (second.errorText) throw new Error(`navigation failed: ${second.errorText}`);
+      await withTimeout(nextLoaded, pageTimeoutMs, `load ${next.file}`);
+      await delay(settleMs);
+      if (next.evaluate) {
+        const response = await cdp.send('Runtime.evaluate', { expression: next.evaluate, returnByValue: true, awaitPromise: true }, sessionId);
+        result.nextValue = response.exceptionDetails ? { error: response.exceptionDetails.text } : response.result?.value;
+      }
     }
     if (screenshot) {
       const { data } = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, sessionId);
