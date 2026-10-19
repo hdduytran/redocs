@@ -27,8 +27,9 @@ decides when work is done; tools plug in through one artifact contract.
 
 ## Non-goals
 
-Multi-author collaboration, a server or hosting, authentication, syncing from source code, a
-chatbot inside the book, generating diagrams from the entity registry, WYSIWYG editing.
+Multi-author collaboration, a server or hosting, authentication, syncing from source code,
+generating diagrams from the entity registry, WYSIWYG editing. A chatbot inside the book exists
+only as the opt-in, bring-your-own-model Ask AI panel; ReDocs hosts no LLM and no proxy.
 
 ## Terminology
 

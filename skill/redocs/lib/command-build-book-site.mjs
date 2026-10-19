@@ -4,6 +4,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync,
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildCatalogPages, buildChangesPages, buildComparePages, buildHomePage } from './build-generated-pages.mjs';
+import { agentIndexScript, buildAgentIndexes } from './build-agent-index.mjs';
 import { loadBook } from './load-book-from-directory.mjs';
 import { comparisonPairs, currentMilestone, resolveVariant } from './milestone-order-and-lifecycle.mjs';
 import { renderBookPages, renderedKey } from './render-book-pages.mjs';
@@ -110,6 +111,10 @@ export function buildBook(o) {
   const written = [];
 
   for (const name of ['redocs.css', 'redocs.js']) writeOut(dist, `_redocs/${name}`, readFileSync(path.join(themeDir, name)), written);
+  // Opt-in Ask AI panel: the query engine, the tool loop and the UI, plus one agent index per milestone.
+  const chat = book.config.chat?.enabled === true;
+  const agentIndexes = chat ? buildAgentIndexes(book, rendered) : null;
+  if (chat) for (const file of SITE.chatScripts) writeOut(dist, file, readFileSync(path.join(themeDir, path.basename(file))), written);
   copyTree(path.join(book.root, 'assets'), path.join(dist, 'assets'), 'assets', written);
 
   for (const artifact of book.artifacts.values()) {
@@ -174,6 +179,7 @@ export function buildBook(o) {
     for (const g of generated) writeOut(dist, g.outFile, g.html, written);
     pageCount += generated.length;
     writeOut(dist, SITE.searchOut(milestone), `window.__REDOCS_SEARCH=${JSON.stringify(search)};\n`, written);
+    if (chat) writeOut(dist, SITE.agentIndexOut(milestone), agentIndexScript(agentIndexes.get(milestone)), written);
   }
 
   const htmlFiles = written.filter((f) => f.endsWith('.html') && !f.startsWith('artifacts/') && !f.startsWith('assets/')).sort();
@@ -182,12 +188,13 @@ export function buildBook(o) {
   return {
     ok: true,
     command: 'build',
-    summary: `OK build: ${pageCount} pages × ${book.milestones.length} milestone(s) -> ${dist}\n  open: ${path.join(dist, 'index.html')}\n  distHash: ${distHash}${errors ? `\n  note: ${errors} content error(s); run \`redocs check\`` : ''}`,
+    summary: `OK build: ${pageCount} pages × ${book.milestones.length} milestone(s) -> ${dist}\n  open: ${path.join(dist, 'index.html')}\n  distHash: ${distHash}${chat ? '\n  chat: Ask AI panel enabled (readers send questions to the LLM endpoint they configure)' : ''}${errors ? `\n  note: ${errors} content error(s); run \`redocs check\`` : ''}`,
     dist,
     milestones: book.milestones.map((m) => m.id),
     pages: pageCount,
     files: written.length,
     contentErrors: errors,
+    chat,
     distHash,
     htmlFiles,
   };

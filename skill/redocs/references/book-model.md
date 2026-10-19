@@ -24,6 +24,7 @@ Schemas: `<skill-dir>/schemas/*.schema.json`. Unknown fields are rejected except
 - `milestones`: chronological array of `{id, label, status, date?, description?}`; `status` ∈ `superseded | current | planned | target`, exactly one `current`.
 - `chapters`: ordered `{id, title, pages: [page-id…]}`. Navigation follows this order; a page in no chapter is unreachable (RD002 warning).
 - `plugins`: per-plugin settings, e.g. `{"archify": {"path": "~/.kiro/crew/skills/archify"}}`.
+- `chat` (optional, off by default): `{enabled, provider, model, endpoint, maxToolRounds, maxTokens}` for the reader's Ask AI panel; see agent-query-and-chat.md.
 
 ## page.json
 

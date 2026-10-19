@@ -48,6 +48,14 @@ Usage: redocs <command> [args] [--json]
   comment <book> <page-id> --author "..." --body "..." [--anchor <heading-slug>] [--reply-to <comment-id>]
   comment <book> <page-id> --resolve <comment-id> [--reopen]
   comment <book> [<page-id>] --list
+  query <book> map [--chapter <id>]                      read-only lookups for agents; all take
+  query <book> outline <page-id>                         [--milestone <m>] (default: current)
+  query <book> search <words...> [--k 8] [--kind <kind>] [--chapter <id>]
+  query <book> read <page:id#anchor> [--max-chars 8000] [--offset n]
+  query <book> entity <entity-id>
+  query <book> changes [--from <m>] [--to <m>]
+  query <book> citations "<text with page: refs>"
+  mcp <book>                                             the same tools as an MCP server (stdio)
 
 Environment: REDOCS_CHROME (browser path), REDOCS_CHROME_NO_SANDBOX=1, REDOCS_ARCHIFY (archify skill dir).`;
 
@@ -106,6 +114,15 @@ const COMMANDS = {
     }
     return mod.addComment({ book: need(book, '<book>'), page: need(page, '<page-id>'), author: flags.author, body: flags.body, anchor: flags.anchor, replyTo: flags['reply-to'] });
   },
+  async query({ positionals: [book, tool, ...rest], flags }) {
+    const { queryBook } = await import('../lib/command-query-book.mjs');
+    return queryBook({ book: need(book, '<book>'), tool, rest, flags });
+  },
+  async mcp({ positionals: [book] }) {
+    const { runMcpServer } = await import('../lib/command-mcp-server.mjs');
+    const handled = await runMcpServer({ book: need(book, '<book>') });
+    return { ok: true, command: 'mcp', silent: true, handled };
+  },
 };
 
 function printHuman(result) {
@@ -139,6 +156,7 @@ async function main() {
     const command = COMMANDS[commandName];
     if (!command) throw new RedocsError(`Unknown command '${commandName}'`, { code: 'ERR_REDOCS_USAGE' });
     const result = await command(parsed);
+    if (result.silent) return 0; // mcp: stdout belonged to the protocol
     if (json) console.log(JSON.stringify(result, null, 2));
     else printHuman(result);
     return result.ok ? 0 : 1;

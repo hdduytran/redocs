@@ -66,6 +66,52 @@ function copyToolbar() {
 </div>`;
 }
 
+// Ask AI panel (book.json chat.enabled). Markup only: redocs-chat.js reveals the toggle once
+// the agent index and chat scripts have loaded, so a reader without JS never sees a dead button.
+// On wide screens the panel docks to the right and pushes the page left (no overlay).
+function chatPanel() {
+  return `<aside id="rd-chat" class="rd-chat" aria-labelledby="rd-chat-title" hidden>
+  <div class="rd-chat__resize" role="separator" aria-orientation="vertical" aria-label="Resize chat panel (arrow keys)" tabindex="0"></div>
+  <div class="rd-chat__head">
+    <h2 id="rd-chat-title" class="rd-chat__title">Ask this book</h2>
+    <button type="button" class="rd-chat__history-btn" aria-pressed="false" aria-controls="rd-chat-history">History</button>
+    <button type="button" class="rd-chat__new">New chat</button>
+    <button type="button" class="rd-chat__expand" aria-pressed="false" aria-label="Widen chat panel" title="Widen / narrow">⇔</button>
+    <button type="button" class="rd-chat__close" aria-label="Close chat">×</button>
+  </div>
+  <details class="rd-chat__settings">
+    <summary>Model settings</summary>
+    <label>Provider <select name="provider"><option value="anthropic">Anthropic (your API key)</option><option value="openai-compatible">OpenAI-compatible (vLLM, Ollama, LM Studio, gateway)</option></select></label>
+    <label>Endpoint <input name="endpoint" type="url" autocomplete="off" spellcheck="false" placeholder="http://host:8000 or …/v1/chat/completions"></label>
+    <div class="rd-chat__model">
+      <label for="rd-chat-model">Model</label>
+      <div class="rd-chat__model-row"><select id="rd-chat-model" name="model"></select><button type="button" class="rd-chat__models-refresh" aria-label="Reload models from the endpoint" title="Reload models (GET /v1/models)">↻</button></div>
+      <span class="rd-chat__models-status rd-muted" role="status" aria-live="polite"></span>
+    </div>
+    <label>API key <input name="key" type="password" autocomplete="off" spellcheck="false"></label>
+    <label class="rd-chat__check"><input name="remember" type="checkbox"> Remember the key on this device</label>
+    <label class="rd-chat__check"><input name="stream" type="checkbox" checked> Stream replies as they are written</label>
+  </details>
+  <section id="rd-chat-history" class="rd-chat__history" aria-label="Chat history" hidden>
+    <div class="rd-chat__history-bar">
+      <label class="rd-visually-hidden" for="rd-chat-history-filter">Filter conversations</label>
+      <input id="rd-chat-history-filter" type="search" placeholder="Filter conversations…" autocomplete="off">
+      <button type="button" class="rd-chat__history-clear">Clear all</button>
+    </div>
+    <ul class="rd-chat__history-list"></ul>
+    <p class="rd-chat__history-note rd-muted">Conversations are saved in this browser only.</p>
+  </section>
+  <div class="rd-chat__log" role="log" aria-live="polite" aria-label="Conversation"></div>
+  <div class="rd-chat__status" role="status" aria-live="polite" hidden><span class="rd-chat__dots" aria-hidden="true"><span></span><span></span><span></span></span><span class="rd-chat__status-text"></span><span class="rd-chat__elapsed"></span></div>
+  <form class="rd-chat__form">
+    <label class="rd-visually-hidden" for="rd-chat-input">Your question</label>
+    <textarea id="rd-chat-input" rows="3" placeholder="Ask about this system… (Enter to send, Shift+Enter for a new line)"></textarea>
+    <div class="rd-chat__actions"><button type="submit" class="rd-chat__send">Send</button><button type="button" class="rd-chat__stop" hidden>Stop</button></div>
+  </form>
+  <p class="rd-chat__privacy rd-muted"></p>
+</aside>`;
+}
+
 function commentBody(body) {
   // Comment bodies are plain text (authored via the CLI or by hand). Escape, keep line breaks,
   // and turn bare page:/entity refs into text only — no network, no HTML injection.
@@ -140,6 +186,18 @@ export function renderShell(o) {
     : '';
   const copy = o.copyMeta ? copyToolbar() : '';
   const comments = o.comments !== undefined ? commentThread(o.comments) : '';
+  const chat = book.config.chat?.enabled === true;
+  // Docked panel: apply the open state and width before first paint so the page does not jump.
+  const chatEarly = chat
+    ? `\n<script>try{var w=Number(localStorage.getItem('redocs-chat-width'));if(w>0)document.documentElement.style.setProperty('--rd-chat-width',w+'px');var c=JSON.parse(sessionStorage.getItem(${safeJson(`redocs-chat-state:${book.config.id}`)})||'null');if(c&&c.open&&!/[?&]embed=1/.test(location.search))document.documentElement.classList.add('rd-chat-open');}catch(e){}</script>`
+    : '';
+  const chatToggle = chat ? '<button class="rd-chat-toggle" type="button" aria-controls="rd-chat" aria-expanded="false" hidden>✦ Ask AI</button>' : '';
+  const chatData = chat
+    ? `${chatPanel()}
+<script type="application/json" id="rd-chat-config">${safeJson({ chat: book.config.chat, page: o.copyMeta?.pageRef || null, base: searchBase })}</script>
+<script src="${relativeHref(outFile, SITE.agentIndexOut(milestone))}"></script>
+${SITE.chatScripts.map((s) => `<script src="${relativeHref(outFile, s)}"></script>`).join('\n')}`
+    : '';
   return `<!doctype html>
 <html lang="${escapeHtml(lang)}" data-milestone="${escapeHtml(milestone)}">
 <head>
@@ -147,7 +205,7 @@ export function renderShell(o) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="ReDocs">
 <title>${escapeHtml(o.title)} · ${escapeHtml(book.config.title)} (${escapeHtml(m?.label || milestone)})</title>
-<script>try{var t=localStorage.getItem('redocs-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<script>try{var t=localStorage.getItem('redocs-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>${chatEarly}
 <link rel="stylesheet" href="${css}">
 </head>
 <body>
@@ -162,6 +220,7 @@ export function renderShell(o) {
     <ul id="rd-search-results" class="rd-search__results" role="listbox" hidden></ul>
   </div>
   <button class="rd-theme" type="button" aria-label="Toggle dark mode">◐</button>
+  ${chatToggle}
 </header>
 <div class="rd-layout${o.wide ? ' rd-layout--wide' : ''}">
 ${sidebar({ book, milestone, outFile, activeFile: outFile })}
@@ -179,6 +238,7 @@ ${o.wide ? '' : toc(o.headings)}
 ${copyData}
 <script src="${search}"></script>
 <script src="${js}"></script>
+${chatData}
 </body>
 </html>
 `;

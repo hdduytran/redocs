@@ -45,6 +45,8 @@ work (`finalize`, `embed archify`) with `REDOCS_CHROME_NO_SANDBOX=1`.
 | Add a screenshot | copy into `assets/screenshots/`, reference `![caption](asset:screenshots/x.png)` | [plugins-and-embeds.md](references/plugins-and-embeds.md) |
 | The system reached the next milestone | `promote <book> <milestone>`, then walk the review list with the owner | [milestones-and-variants.md](references/milestones-and-variants.md) |
 | Comment on a page / review with others | `comment <book> <page-id> --author "..." --body "..."` (reply with `--reply-to`, close with `--resolve`); commit the `comments/` file | [comments-and-copy.md](references/comments-and-copy.md) |
+| Answer a question about the book / find where something is described | `query <book> map`, then `query <book> search <words>` / `outline <page>`, then `read page:<id>#<anchor>`; cite `page:` refs (or run `mcp <book>` for an MCP client) | [agent-query-and-chat.md](references/agent-query-and-chat.md) |
+| Let readers ask an AI inside the book | set `"chat": {"enabled": true, ...}` in `book.json`, then `finalize` | [agent-query-and-chat.md](references/agent-query-and-chat.md) |
 | Validate / finish | `check <book>`, then `finalize <book>` | [check-codes.md](references/check-codes.md) |
 | Share the book | `finalize`, then `pack <book>` (zip; readers open `index.html`) | — |
 
