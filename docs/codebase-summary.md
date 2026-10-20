@@ -17,13 +17,13 @@ File names describe their role; start from the group that owns the change.
 | Book model | `load-book-`, `validate-book-schemas`, `milestone-order-` | Reading a book, schema validation, milestone ordering and variant resolution |
 | Rendering | `render-` | Markdown and HTML-fragment extensions, references, the page shell |
 | Site output | `site-paths-`, `build-generated-pages`, `command-build-` | `dist/` layout, generated catalog/changes/compare pages, writing the site |
-| Gate | `check-book-rules`, `command-check-`, `command-finalize-`, `chrome-cdp-` | Check rules, finalize, the file:// browser check |
-| Authoring | `command-init-`, `command-add-`, `command-promote-` | Commands that edit a book |
+| Gate | `check-book-rules`, `command-check-`, `command-finalize-`, `chrome-cdp-`, `publish-site` | Check rules, finalize, the file:// browser check, and the committed publish folder (`publish.dir`): the source-hash stamp, `RD015` staleness, and copying `dist/` into it |
+| Authoring | `command-init-`, `command-add-`, `command-promote-`, `command-ci-` | Commands that scaffold or edit a book, including the GitHub/GitLab release pipelines (`command-ci-pipelines`, also run at `init`) |
 | Reviewing | `command-comment` | Comment threads in `comments/<page-id>.jsonl` (add, reply, resolve, list) |
 | Agent query | `build-agent-index`, `query-book-index`, `command-query-`, `command-mcp-` | Per-milestone agent index, the query tools (engine in `assets/theme/redocs-query.js`), `redocs query`, `redocs mcp` |
 | Upgrade | `redocs-version`, `upgrade-migrations`, `command-upgrade-` | Skill version (from `package.json`), per-release migration steps (prose in [`CHANGELOG.md`](../skill/redocs/CHANGELOG.md)), `redocs upgrade`, check `RD014` |
 | Artifacts | `command-embed-`, `load-plugin-registry` | Embedding and the plugin contract |
-| Packaging | `command-pack-` | The zip |
+| Packaging | `command-pack-` | The zip (prefers the committed `publish.dir`, else `dist/`) |
 | Shared | `shared-helpers` | Diagnostics, safe paths, stable JSON, hashing, HTML escaping |
 
 ## Other owners

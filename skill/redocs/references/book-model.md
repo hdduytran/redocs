@@ -12,6 +12,7 @@ A ReDocs book is a Git repository. Everything an agent needs to continue the wor
 │   └── index.md | index.html | <milestone>.md | <milestone>.html
 ├── artifacts/<id>/      spec.*, rendered output, receipt.json (written by `redocs embed`)
 ├── assets/              screenshots/, wireframes/, any static file referenced with asset:
+├── site/                committed built site (only when book.json sets publish.dir)
 └── dist/                build output (git-ignored)
 ```
 
@@ -25,6 +26,7 @@ Schemas: `<skill-dir>/schemas/*.schema.json`. Unknown fields are rejected except
 - `milestones`: chronological array of `{id, label, status, date?, description?}`; `status` ∈ `superseded | current | planned | target`, exactly one `current`.
 - `chapters`: ordered `{id, title, pages: [page-id…]}`. Navigation follows this order; a page in no chapter is unreachable (RD002 warning).
 - `plugins`: per-plugin settings, e.g. `{"archify": {"path": "~/.kiro/crew/skills/archify"}}`.
+- `publish` (optional): `{"dir": "site"}` names a committed folder that mirrors `dist/`. When set, `redocs finalize` copies the built site into it after the browser check passes, so readers open `<dir>/index.html` straight from the repo and no one runs rsync by hand. `check` reports `RD015` when it is missing or stale. Omit it to keep `dist/`-only (git-ignored) behaviour.
 - `chat` (optional, off by default): `{enabled, provider, model, endpoint, maxToolRounds, maxTokens}` for the reader's Ask AI panel; see agent-query-and-chat.md.
 
 ## page.json

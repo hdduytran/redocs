@@ -16,11 +16,13 @@ function withPage(dir, id, body, meta = {}) {
   editJson(path.join(dir, 'book.json'), (c) => { c.chapters[0].pages.push(id); });
 }
 
-test('starter book: no errors, only RD011 warnings', () => {
+test('starter book: only RD011 warnings, plus RD015 until the site is built', () => {
   const result = checkBook({ book: starterBook() });
   assert.equal(result.ok, true);
   assert.equal(result.errors, 0);
-  assert.ok(result.diagnostics.every((d) => d.code === 'RD011'));
+  // Fresh book ships publish.dir "site" but no built site/ yet -> one RD015 "not built" warning.
+  assert.ok(result.diagnostics.every((d) => d.code === 'RD011' || d.code === 'RD015'));
+  assert.equal(result.diagnostics.filter((d) => d.code === 'RD015').length, 1);
   assert.equal(checkBook({ book: starterBook(), strict: true }).ok, false, 'strict turns warnings into failure');
 });
 

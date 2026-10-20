@@ -4,7 +4,7 @@
 // the undo), runs only idempotent "auto" steps, stamps book.json "redocsVersion", then checks.
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { checkBookModel } from './command-check-book.mjs';
 import { loadBook } from './load-book-from-directory.mjs';
@@ -27,7 +27,9 @@ function makeContext(root, written) {
     exists: (rel) => existsSync(resolveInside(root, rel)),
     readText: (rel) => readFileSync(resolveInside(root, rel), 'utf8'),
     writeText: (rel, text) => {
-      writeFileSync(resolveInside(root, rel), text);
+      const file = resolveInside(root, rel);
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, text);
       if (!written.includes(rel)) written.push(rel);
     },
   };

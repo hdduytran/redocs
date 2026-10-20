@@ -51,6 +51,15 @@
       "description": "Per-plugin settings, e.g. { \"archify\": { \"path\": \"~/.kiro/crew/skills/archify\" } }.",
       "additionalProperties": { "type": "object" }
     },
+    "publish": {
+      "type": "object",
+      "description": "A committed, pre-built copy of the book. When set, `redocs finalize` copies dist/ into this folder after a successful build and browser check, so the built site travels with the repo and no one runs rsync by hand. Omit to keep the default (dist/ only, git-ignored).",
+      "additionalProperties": false,
+      "required": ["dir"],
+      "properties": {
+        "dir": { "type": "string", "minLength": 1, "description": "Folder (book-relative) that mirrors dist/, e.g. \"site\". Cannot be \".\" or \"dist\". Commit it so readers open <dir>/index.html straight from the repo." }
+      }
+    },
     "chat": {
       "type": "object",
       "description": "Opt-in 'Ask AI' panel in the built book. Off by default. When enabled, the reader's question and the book sections the model asks for are sent to the LLM endpoint the reader configures (their own API key or a local model); nothing is sent until they press Send.",

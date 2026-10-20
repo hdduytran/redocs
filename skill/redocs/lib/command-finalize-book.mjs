@@ -1,29 +1,48 @@
 // `redocs finalize <book>`: check -> build -> file:// browser check. The receipt is the only
-// evidence an agent may use to claim the book is done.
+// evidence an agent may use to claim the book is done. When book.json sets "publish": {"dir": ...},
+// a successful finalize also copies dist/ into that committed folder so the built site travels with
+// the repo (no hand-run rsync). The copy happens AFTER the browser check, which runs on dist/, so
+// the publish folder is the only thing ever wiped.
 
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { checkFilePages } from './chrome-cdp-file-protocol-check.mjs';
 import { buildBook } from './command-build-book-site.mjs';
 import { checkBookModel } from './command-check-book.mjs';
+import { publishDir, syncPublishDir } from './publish-site.mjs';
 import { REDOCS_VERSION } from './redocs-version.mjs';
+import { toPosix } from './shared-helpers.mjs';
 
 const MAX_REPORTED = 20;
 
 export async function finalizeBook({ book: bookDir, strict = false, skipBrowser = false, allowSkipBrowser = false }) {
-  const receipt = { ok: false, command: 'finalize', redocsVersion: REDOCS_VERSION, checks: null, build: null, browser: null };
+  const receipt = { ok: false, command: 'finalize', redocsVersion: REDOCS_VERSION, checks: null, build: null, browser: null, publish: null };
   const check = checkBookModel(bookDir, { strict });
   receipt.checks = { ok: check.ok, errors: check.errors, warnings: check.warnings };
+  // Published copy, when the browser check passes. Done inside finish() so the written receipt
+  // (which records the publish result) is itself part of what gets copied into publish.dir.
+  const publish = () => {
+    const rel = publishDir(check.book?.config);
+    if (!rel || !receipt.ok || !receipt.build) return;
+    const files = syncPublishDir(check.book.root, rel, path.join(check.book.root, 'dist'));
+    receipt.publish = { dir: rel, files };
+  };
   const finish = (summary) => {
-    if (receipt.build) writeFileSync(path.join(receipt.build.dist, 'finalize-receipt.json'), `${JSON.stringify({ ...receipt, diagnostics: undefined }, null, 2)}\n`);
-    return { ...receipt, summary, diagnostics: check.diagnostics };
+    if (receipt.build) {
+      const distAbs = path.join(check.book.root, 'dist');
+      writeFileSync(path.join(distAbs, 'finalize-receipt.json'), `${JSON.stringify({ ...receipt, diagnostics: undefined }, null, 2)}\n`);
+      publish();
+    }
+    const publishNote = receipt.publish ? `\n  published: copied dist/ -> ${receipt.publish.dir}/ (${receipt.publish.files} files)` : '';
+    return { ...receipt, summary: summary + publishNote, diagnostics: check.diagnostics };
   };
   if (!check.ok) {
     return finish(`FAILED finalize at check: ${check.errors} error(s), ${check.warnings} warning(s)${strict ? ' [strict]' : ''}. Fix them and rerun.`);
   }
 
   const build = buildBook({ book: check.book, rendered: check.render });
-  receipt.build = { dist: build.dist, milestones: build.milestones, pages: build.pages, distHash: build.distHash };
+  // dist is recorded book-relative so the receipt carries no absolute machine path (safe to pack).
+  receipt.build = { dist: toPosix(path.relative(check.book.root, build.dist)), milestones: build.milestones, pages: build.pages, distHash: build.distHash, sourceHash: build.sourceHash };
 
   if (skipBrowser) {
     receipt.browser = { status: 'skipped' };

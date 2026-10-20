@@ -9,6 +9,35 @@ existing book. Step kinds:
 
 The machine-readable version is `lib/upgrade-migrations.mjs`. A test keeps the two in sync.
 
+## 0.3.0 — 2026-10-20
+
+### Added
+- Committed published site: `book.json` `publish.dir` (e.g. `"publish": {"dir": "site"}`) names a
+  folder that travels with the repo as a pre-built copy of the book. When set, `redocs finalize`
+  copies `dist/` into it after the build and the file:// browser check pass, so no one runs rsync
+  by hand. Omit `publish` to keep the old behaviour (`dist/` only, git-ignored).
+- `dist/_redocs/build.json`: a deterministic stamp of the source hash the site was built from.
+- Check `RD015`: the published site is missing, or stale because the sources changed after it was
+  built (warning), so a commit never ships a published site nobody rebuilt.
+- `redocs pack` zips the committed publish folder when one is configured, else `dist/`.
+- Finalize receipt records `build.dist` as a book-relative path (no absolute machine path), so it
+  is safe to pack and to commit inside the published site.
+- New books scaffold a reader-facing `README.md`, a `"publish": {"dir": "site"}` in `book.json`,
+  and a "Published site" section in `AGENTS.md`.
+- `redocs ci <book> [--provider github|gitlab|both]` writes a release pipeline that, on a version
+  tag (`v*`), zips the committed publish folder and attaches it to the GitHub/GitLab release. New
+  books get both pipelines at `init`. The pipeline needs no Node or ReDocs on CI — it zips the
+  already-built `site/` and fails fast if that folder is missing.
+
+### Upgrade steps
+- auto `publish-site`: add `"publish": {"dir": "site"}` to `book.json`, create a reader `README.md`
+  (only if absent), and add the "Published site" section to `AGENTS.md`. Reported as optional in
+  the plan because it adopts a new capability, but written by `--apply` since every part is
+  idempotent and non-destructive. After it, `redocs finalize` replaces the hand-run rsync step.
+- auto `ci-pipelines`: add `.github/workflows/redocs-release.yml` and `.gitlab-ci.yml` (each only
+  when absent) so a version tag releases the book zip. Owner-authored pipelines are never
+  overwritten.
+
 ## 0.2.0 — 2026-10-19
 
 ### Added

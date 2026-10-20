@@ -12,6 +12,7 @@ import { renderBookPages, renderedKey } from './render-book-pages.mjs';
 import { renderShell } from './render-page-shell-layout.mjs';
 import { escapeHtml, RedocsError, resolveInside, sha256Text, toPosix } from './shared-helpers.mjs';
 import { relativeHref, SITE } from './site-paths-and-urls.mjs';
+import { BUILD_STAMP, hashSources } from './publish-site.mjs';
 
 const themeDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'theme');
 const SEARCH_TEXT_LIMIT = 20000;
@@ -117,7 +118,12 @@ export function buildBook(o) {
   mkdirSync(dist, { recursive: true });
   const written = [];
 
-  for (const name of ['redocs.css', 'redocs.js']) writeOut(dist, `_redocs/${name}`, readFileSync(path.join(themeDir, name)), written);
+    for (const name of ['redocs.css', 'redocs.js']) writeOut(dist, `_redocs/${name}`, readFileSync(path.join(themeDir, name)), written);
+    // Deterministic stamp of the sources this site was built from. A committed publish copy carries
+    // it so `check` (RD015) can warn when the sources changed but no one rebuilt. No timestamp: dist/
+    // must hash the same for the same sources (pack relies on it).
+    const sourceHash = hashSources(book.root, book.config);
+    writeOut(dist, BUILD_STAMP, `${JSON.stringify({ schema: 'redocs/build', redocsVersion: book.config.redocsVersion || null, sourceHash }, null, 2)}\n`, written);
   // Opt-in Ask AI panel: the query engine, the tool loop and the UI, plus one agent index per milestone.
   const chat = book.config.chat?.enabled === true;
   const agentIndexes = chat ? buildAgentIndexes(book, rendered) : null;
@@ -203,6 +209,7 @@ export function buildBook(o) {
     contentErrors: errors,
     chat,
     distHash,
+    sourceHash,
     htmlFiles,
   };
 }

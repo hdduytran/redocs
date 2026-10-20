@@ -10,14 +10,16 @@
 // RD006 page variants and source files
 // RD013 comment references a missing page, anchor or reply target
 // RD014 book written with an older (warning) or newer (error) ReDocs than this skill
+// RD015 published site (book.json publish.dir) is stale or missing vs the current sources (warning)
 
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { bookVersion, compareVersions, REDOCS_VERSION } from './redocs-version.mjs';
+import { hashSources, publishDir, publishedSourceHash } from './publish-site.mjs';
 import { renderedKey } from './render-book-pages.mjs';
 import { diagnostic, sha256File } from './shared-helpers.mjs';
 
-export const RULE_CODES = ['RD000', 'RD001', 'RD002', 'RD003', 'RD004', 'RD005', 'RD006', 'RD007', 'RD008', 'RD009', 'RD010', 'RD011', 'RD012', 'RD013', 'RD014'];
+export const RULE_CODES = ['RD000', 'RD001', 'RD002', 'RD003', 'RD004', 'RD005', 'RD006', 'RD007', 'RD008', 'RD009', 'RD010', 'RD011', 'RD012', 'RD013', 'RD014', 'RD015'];
 
 function ruleSkillVersion(book, out) {
   const version = bookVersion(book.config);
@@ -29,6 +31,33 @@ function ruleSkillVersion(book, out) {
   } else if (order > 0) {
     out.push(diagnostic('RD014', 'error', `Book was written with ReDocs ${version}, newer than this skill (${REDOCS_VERSION})`, {
       file: 'book.json', pointer: '/redocsVersion', hint: 'Update the ReDocs skill.',
+    }));
+  }
+}
+
+/**
+ * RD015: when book.json declares a committed publish folder, warn if it is missing or built from
+ * sources that have since changed, so a new commit does not ship a published site nobody rebuilt.
+ */
+function rulePublishFreshness(book, out) {
+  let rel;
+  try {
+    rel = publishDir(book.config);
+  } catch (error) {
+    out.push(diagnostic('RD015', 'error', error.message, { file: 'book.json', pointer: '/publish/dir', hint: error.hint }));
+    return;
+  }
+  if (!rel) return;
+  const dir = path.join(book.root, rel);
+  if (!existsSync(dir) || !existsSync(path.join(dir, 'index.html'))) {
+    out.push(diagnostic('RD015', 'warning', `Publish folder '${rel}/' is empty or missing`, { file: 'book.json', pointer: '/publish/dir', hint: 'Run `redocs finalize <book>` to build and publish it.' }));
+    return;
+  }
+  const recorded = publishedSourceHash(book.root, rel);
+  const current = hashSources(book.root, book.config);
+  if (recorded !== current) {
+    out.push(diagnostic('RD015', 'warning', `Published site '${rel}/' is stale: sources changed since it was built`, {
+      file: 'book.json', pointer: '/publish/dir', hint: 'Run `redocs finalize <book>` to rebuild and republish it, then commit the folder.',
     }));
   }
 }
@@ -191,6 +220,7 @@ export function runCheckRules(book, rendered, renderDiagnostics) {
   const out = [...book.diagnostics];
   if (!book.config) return out;
   ruleSkillVersion(book, out);
+  rulePublishFreshness(book, out);
   ruleMilestonesAndChapters(book, out);
   ruleChapterPages(book, out);
   ruleVariants(book, out);

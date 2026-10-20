@@ -57,6 +57,7 @@ Usage: redocs <command> [args] [--json]
   query <book> citations "<text with page: refs>"
   mcp <book>                                             the same tools as an MCP server (stdio)
   upgrade <book> [--apply] [--to <version>] [--force]    bring a book up to this skill's version (CHANGELOG.md)
+  ci <book> [--provider github|gitlab|both] [--force]    write a release pipeline that zips the book on a version tag
 
 Environment: REDOCS_CHROME (browser path), REDOCS_CHROME_NO_SANDBOX=1, REDOCS_ARCHIFY (archify skill dir).`;
 
@@ -127,6 +128,10 @@ const COMMANDS = {
   async upgrade({ positionals: [book], flags }) {
     const { upgradeBook } = await import('../lib/command-upgrade-book.mjs');
     return upgradeBook({ book: need(book, '<book>'), apply: flags.apply, to: flags.to, force: flags.force });
+  },
+  async ci({ positionals: [book], flags }) {
+    const { writeCiPipelines } = await import('../lib/command-ci-pipelines.mjs');
+    return writeCiPipelines({ book: need(book, '<book>'), provider: flags.provider, force: flags.force });
   },
 };
 

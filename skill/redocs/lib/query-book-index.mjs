@@ -2,27 +2,37 @@
 // assets/theme/redocs-query.js (one implementation for the browser chat, the CLI and MCP);
 // importing it runs it once and it publishes globalThis.RedocsQuery.
 
-import { readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import '../assets/theme/redocs-query.js';
 import { buildAgentIndexes } from './build-agent-index.mjs';
 import { currentMilestone } from './milestone-order-and-lifecycle.mjs';
 import { loadBook } from './load-book-from-directory.mjs';
+import { BASE_SKIP_DIRS, sourceSkipSet } from './publish-site.mjs';
 import { renderBookPages } from './render-book-pages.mjs';
 import { RedocsError } from './shared-helpers.mjs';
 
 export const RedocsQuery = globalThis.RedocsQuery;
 export const { TOOL_SPECS, dispatch } = RedocsQuery;
 
-const SKIP_DIRS = new Set(['dist', '.git', 'node_modules']);
+/** Skip build output, VCS, deps and the book's configured publish dir (a cheap book.json peek). */
+function skipDirsFor(root) {
+  const file = path.join(root, 'book.json');
+  if (!existsSync(file)) return new Set(BASE_SKIP_DIRS);
+  try {
+    return sourceSkipSet(JSON.parse(readFileSync(file, 'utf8')));
+  } catch {
+    return new Set(BASE_SKIP_DIRS);
+  }
+}
 
 /** Cheap change detector: relative path, size and mtime of every book source file. */
-function fingerprint(root) {
+function fingerprint(root, skip) {
   const parts = [];
   (function walk(dir, rel) {
     for (const name of readdirSync(dir).sort()) {
       if (name.startsWith('.') && name !== '.') continue;
-      if (!rel && SKIP_DIRS.has(name)) continue;
+      if (!rel && skip.has(name)) continue;
       const full = path.join(dir, name);
       const s = statSync(full);
       if (s.isDirectory()) walk(full, `${rel}${name}/`);
@@ -41,7 +51,7 @@ const cache = new Map();
  */
 export function loadAgentIndexes(bookDir) {
   const root = path.resolve(bookDir);
-  const print = fingerprint(root);
+  const print = fingerprint(root, skipDirsFor(root));
   const hit = cache.get(root);
   if (hit && hit.print === print) return hit.value;
   const book = loadBook(root);

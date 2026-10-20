@@ -2,7 +2,7 @@
 // (lib/upgrade-migrations.mjs, CHANGELOG.md in prose). Plan by default; --apply on a clean tree.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
@@ -18,9 +18,20 @@ const skillDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..'
 function oldBook() {
   const dir = starterBook('old');
   const bookFile = path.join(dir, 'book.json');
-  writeFileSync(bookFile, readFileSync(bookFile, 'utf8').replace(/\n {2}"redocsVersion": "[^"]*",/, ''));
+  let book = readFileSync(bookFile, 'utf8')
+    .replace(/\n {2}"redocsVersion": "[^"]*",/, '')
+    .replace(/\n {2}"publish": \{ "dir": "site" \},/, ''); // 0.3.0 addition
+  writeFileSync(bookFile, book);
+  rmSync(path.join(dir, 'README.md'), { force: true }); // 0.3.0 addition
   const agents = path.join(dir, 'AGENTS.md');
-  writeFileSync(agents, readFileSync(agents, 'utf8').split('\n').filter((l) => !/redocs (query|upgrade)/.test(l)).join('\n'));
+  const text = readFileSync(agents, 'utf8')
+    .split('\n')
+    .filter((l) => !/redocs (query|upgrade)/.test(l)) // 0.2.0 rows
+    .join('\n')
+    .replace(/\n## Published site\n[\s\S]*$/, '\n'); // 0.3.0 section
+  writeFileSync(agents, text);
+  rmSync(path.join(dir, '.github'), { recursive: true, force: true }); // 0.3.0 addition
+  rmSync(path.join(dir, '.gitlab-ci.yml'), { force: true }); // 0.3.0 addition
   return dir;
 }
 
@@ -44,25 +55,33 @@ test('plan only by default: lists every step by kind and touches nothing', () =>
   assert.equal(r.to, REDOCS_VERSION);
   assert.equal(r.applied, false);
   const status = Object.fromEntries(r.plan.map((p) => [p.id, p.status]));
-  assert.deepEqual(status, { 'agents-md-commands': 'apply', 'page-summaries': 'todo', 'enable-chat': 'available' });
+  assert.deepEqual(status, { 'agents-md-commands': 'apply', 'page-summaries': 'todo', 'enable-chat': 'available', 'publish-site': 'apply', 'ci-pipelines': 'apply' });
   assert.equal(r.plan.find((p) => p.id === 'page-summaries').items.length, 6);
   assert.match(r.summary, /PLAN upgrade: ReDocs 0\.1\.0 -> /);
   assert.equal(readFileSync(path.join(dir, 'AGENTS.md'), 'utf8') + readFileSync(path.join(dir, 'book.json'), 'utf8'), before);
 });
 
-test('--apply: auto steps applied in place, version stamped without reformatting book.json, idempotent', () => {
+test('--apply: auto steps applied in place, version stamped, publish-site added, idempotent', () => {
   const dir = oldBook();
-  const bookBefore = readFileSync(path.join(dir, 'book.json'), 'utf8');
   const r = upgradeBook({ book: dir, apply: true });
   assert.equal(r.ok, true, r.summary);
-  assert.deepEqual(r.changedFiles.sort(), ['AGENTS.md', 'book.json']);
+  assert.deepEqual(r.changedFiles.sort(), ['.github/workflows/redocs-release.yml', '.gitlab-ci.yml', 'AGENTS.md', 'README.md', 'book.json']);
   assert.equal(r.plan.find((p) => p.id === 'agents-md-commands').status, 'applied');
+  assert.equal(r.plan.find((p) => p.id === 'publish-site').status, 'applied');
+  assert.equal(r.plan.find((p) => p.id === 'ci-pipelines').status, 'applied');
+  assert.ok(readFileSync(path.join(dir, '.github/workflows/redocs-release.yml'), 'utf8').includes('action-gh-release'));
+  assert.ok(readFileSync(path.join(dir, '.gitlab-ci.yml'), 'utf8').includes('release-cli'));
   const agents = readFileSync(path.join(dir, 'AGENTS.md'), 'utf8').split('\n');
   const at = (re) => agents.findIndex((l) => re.test(l));
   assert.equal(at(/redocs query/), at(/^\| Validate \|/) + 1, 'query row right after Validate');
   assert.equal(at(/redocs upgrade/), at(/^\| Share \|/) + 1, 'upgrade row right after Share');
-  const bookAfter = readFileSync(path.join(dir, 'book.json'), 'utf8');
-  assert.equal(bookAfter.replace(`\n  "redocsVersion": "${REDOCS_VERSION}",`, ''), bookBefore, 'only the version line is added');
+  assert.match(agents.join('\n'), /## Published site/);
+  // book.json gains the version line and the publish config, and stays valid JSON.
+  const book = JSON.parse(readFileSync(path.join(dir, 'book.json'), 'utf8'));
+  assert.equal(book.redocsVersion, REDOCS_VERSION);
+  assert.deepEqual(book.publish, { dir: 'site' });
+  // README created for readers.
+  assert.match(readFileSync(path.join(dir, 'README.md'), 'utf8'), /Published site|site\/index\.html|ReDocs system design book/);
   assert.deepEqual(rd014(dir), []);
   assert.match(r.summary, /not a Git repository/);
   const again = upgradeBook({ book: dir, apply: true });

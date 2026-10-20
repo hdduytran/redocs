@@ -6,6 +6,7 @@ import { createWriteStream, existsSync, readdirSync, readFileSync, statSync } fr
 import path from 'node:path';
 import yazl from 'yazl';
 import { loadBook } from './load-book-from-directory.mjs';
+import { publishDir } from './publish-site.mjs';
 import { RedocsError, toPosix } from './shared-helpers.mjs';
 
 const FIXED_MTIME = new Date('2000-01-01T00:00:00Z');
@@ -24,17 +25,22 @@ function listFiles(dir) {
 
 export async function packBook({ book: bookDir, out }) {
   const book = loadBook(bookDir);
-  const dist = path.join(book.root, 'dist');
-  if (!existsSync(path.join(dist, 'index.html'))) {
-    throw new RedocsError('dist/ is missing; build first', { code: 'ERR_REDOCS_NO_DIST', hint: 'Run `redocs finalize <book>` (or `redocs build`).' });
+  // Prefer the committed publish copy when the book has one; fall back to dist/. Both are a built
+  // site rooted at index.html, so the zip is identical in shape either way.
+  const publishRel = publishDir(book.config);
+  const source = publishRel && existsSync(path.join(book.root, publishRel, 'index.html'))
+    ? path.join(book.root, publishRel)
+    : path.join(book.root, 'dist');
+  if (!existsSync(path.join(source, 'index.html'))) {
+    throw new RedocsError(`${toPosix(path.relative(book.root, source))}/ is missing; build first`, { code: 'ERR_REDOCS_NO_DIST', hint: 'Run `redocs finalize <book>` (or `redocs build`).' });
   }
   const target = path.resolve(out || path.join(book.root, `${book.config.id}-book.zip`));
-  if (target.startsWith(dist + path.sep)) throw new RedocsError('The zip cannot be written inside dist/', { code: 'ERR_REDOCS_PATH' });
+  if (target.startsWith(source + path.sep)) throw new RedocsError('The zip cannot be written inside the folder being packed', { code: 'ERR_REDOCS_PATH' });
   const folder = `${book.config.id}-book`;
   const zip = new yazl.ZipFile();
-  const files = listFiles(dist);
+  const files = listFiles(source);
   for (const file of files) {
-    zip.addBuffer(readFileSync(file), `${folder}/${toPosix(path.relative(dist, file))}`, { mtime: FIXED_MTIME, mode: 0o100644 });
+    zip.addBuffer(readFileSync(file), `${folder}/${toPosix(path.relative(source, file))}`, { mtime: FIXED_MTIME, mode: 0o100644 });
   }
   zip.end();
   await new Promise((resolve, reject) => {

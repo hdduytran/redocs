@@ -17,5 +17,6 @@
     { "id": "network", "title": "Network & Infrastructure", "pages": ["network/topology"] },
     { "id": "proposals", "title": "Proposals", "pages": ["proposals/overview"] }
   ],
+  "publish": { "dir": "site" },
   "plugins": {}
 }

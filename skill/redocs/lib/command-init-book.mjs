@@ -3,6 +3,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeCiPipelines } from './command-ci-pipelines.mjs';
 import { REDOCS_VERSION } from './redocs-version.mjs';
 import { ID_PATTERNS, RedocsError, today } from './shared-helpers.mjs';
 
@@ -58,5 +59,7 @@ export function initBook({ dir, name, title, language = 'en', force = false }) {
     REDOCS_VERSION,
   };
   copyTemplate(templateRoot, root, tokens);
-  return { ok: true, command: 'init', book: root, id: name, title: tokens.BOOK_TITLE };
+  // GitHub + GitLab release pipelines that zip the book on a version tag (same generator as `redocs ci`).
+  const ci = writeCiPipelines({ book: root, provider: 'both' });
+  return { ok: true, command: 'init', book: root, id: name, title: tokens.BOOK_TITLE, ci: ci.written };
 }
