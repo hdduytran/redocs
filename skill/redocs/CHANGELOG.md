@@ -9,6 +9,21 @@ existing book. Step kinds:
 
 The machine-readable version is `lib/upgrade-migrations.mjs`. A test keeps the two in sync.
 
+## 0.4.0 — 2026-11-10
+
+### Changed
+- The Ask AI panel is now shown by default. A book needs no `chat` entry: every build ships the
+  agent index, the chat scripts and the panel. Readers still bring their own model and key, and
+  nothing is sent until they press Send.
+- To remove it, set `"chat": {"enabled": false}` in `book.json`. The build then writes no agent
+  index, no chat scripts and no panel markup.
+- `chat.enabled` now defaults to `true` (it was `false`).
+
+### Upgrade steps
+- optional `chat-default-shown`: existing books will show the Ask AI panel after the next
+  `redocs finalize`. Set `"chat": {"enabled": false}` first if the book must not offer it.
+- Every upgrade stamps `"redocsVersion"` in `book.json`.
+
 ## 0.3.0 — 2026-10-20
 
 ### Added
@@ -60,7 +75,7 @@ The machine-readable version is `lib/upgrade-migrations.mjs`. A test keeps the t
 - owner `page-summaries`: pages without a one-line `summary` in `page.json` are listed.
   `book_map`, search and the Ask AI panel show the summary first, so ask the owner for one.
   Without it, the first paragraph is used.
-- optional `enable-chat`: set `"chat": {"enabled": true}` in `book.json` to add the Ask AI panel.
+- optional `enable-chat`: add the Ask AI panel with `"chat": {"enabled": true}` in `book.json` (superseded in 0.4.0, where the panel is on by default).
 - Every upgrade stamps `"redocsVersion"` in `book.json`.
 
 ## 0.1.0 — 2026-10-18

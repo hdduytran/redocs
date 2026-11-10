@@ -41,7 +41,8 @@ changes, so an agent sees its own edits on the next call.
 
 ## Readers (Ask AI panel)
 
-Enable the panel in `book.json`; it is off by default:
+The panel is shown by default: every build ships it, with no `book.json` entry needed. Readers
+bring their own model and key. To set defaults, add a `chat` block:
 
 ```json
 "chat": { "enabled": true, "provider": "anthropic", "model": "claude-sonnet-4-5", "maxToolRounds": 6 }
@@ -55,7 +56,10 @@ the provider, endpoint and key in *Model settings*. The endpoint can be a server
 `GET …/v1/models` and fills the model picker. The list is remembered, so other pages show it
 without making a request. The key stays in `sessionStorage` unless the reader ticks *Remember*.
 
-With chat enabled, `build` also writes `<milestone>/agent-index.js` and the chat scripts
+To remove the panel, set `"chat": { "enabled": false }`. The build then writes no agent index,
+no chat scripts and no panel markup, and the page makes no network call.
+
+With chat on (the default), `build` also writes `<milestone>/agent-index.js` and the chat scripts
 (query, stream, agent, store, render, UI) under
 `_redocs/`. The tool loop (`redocs-chat-agent.js`) runs in the page: every tool executes locally
 over the index, and the only request is to the LLM endpoint, sent after the reader presses Send.
@@ -82,5 +86,6 @@ enforces this.
   current conversation and draft follow the reader across pages in `sessionStorage` for that
   tab. A question still running when the reader clicks away is lost, and the next page says so.
 
-Enable chat only when readers may send book content to an LLM provider. The privacy note under
-the input box tells them which host receives it.
+The panel sends book content to an LLM provider only after the reader configures a model and
+presses Send. If the book must never offer that, set `"chat": { "enabled": false }`. The privacy
+note under the input box tells readers which host receives their question.

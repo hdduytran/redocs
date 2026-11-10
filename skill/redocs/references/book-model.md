@@ -27,7 +27,7 @@ Schemas: `<skill-dir>/schemas/*.schema.json`. Unknown fields are rejected except
 - `chapters`: ordered `{id, title, pages: [page-id…]}`. Navigation follows this order; a page in no chapter is unreachable (RD002 warning).
 - `plugins`: per-plugin settings, e.g. `{"archify": {"path": "~/.kiro/crew/skills/archify"}}`.
 - `publish` (optional): `{"dir": "site"}` names a committed folder that mirrors `dist/`. When set, `redocs finalize` copies the built site into it after the browser check passes, so readers open `<dir>/index.html` straight from the repo and no one runs rsync by hand. `check` reports `RD015` when it is missing or stale. Omit it to keep `dist/`-only (git-ignored) behaviour.
-- `chat` (optional, off by default): `{enabled, provider, model, endpoint, maxToolRounds, maxTokens}` for the reader's Ask AI panel; see agent-query-and-chat.md.
+- `chat` (optional, on by default; `{"enabled": false}` removes the panel): `{enabled, provider, model, endpoint, maxToolRounds, maxTokens}` for the reader's Ask AI panel; see agent-query-and-chat.md.
 
 ## page.json
 

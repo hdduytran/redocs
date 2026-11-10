@@ -55,7 +55,7 @@ test('plan only by default: lists every step by kind and touches nothing', () =>
   assert.equal(r.to, REDOCS_VERSION);
   assert.equal(r.applied, false);
   const status = Object.fromEntries(r.plan.map((p) => [p.id, p.status]));
-  assert.deepEqual(status, { 'agents-md-commands': 'apply', 'page-summaries': 'todo', 'enable-chat': 'available', 'publish-site': 'apply', 'ci-pipelines': 'apply' });
+  assert.deepEqual(status, { 'agents-md-commands': 'apply', 'page-summaries': 'todo', 'enable-chat': 'available', 'publish-site': 'apply', 'ci-pipelines': 'apply', 'chat-default-shown': 'available' });
   assert.equal(r.plan.find((p) => p.id === 'page-summaries').items.length, 6);
   assert.match(r.summary, /PLAN upgrade: ReDocs 0\.1\.0 -> /);
   assert.equal(readFileSync(path.join(dir, 'AGENTS.md'), 'utf8') + readFileSync(path.join(dir, 'book.json'), 'utf8'), before);

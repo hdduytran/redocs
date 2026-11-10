@@ -29,7 +29,7 @@ decides when work is done; tools plug in through one artifact contract.
 
 Multi-author collaboration, a server or hosting, authentication, syncing from source code,
 generating diagrams from the entity registry, WYSIWYG editing. A chatbot inside the book exists
-only as the opt-in, bring-your-own-model Ask AI panel; ReDocs hosts no LLM and no proxy.
+only as the bring-your-own-model Ask AI panel, shown by default and removable with `"chat": {"enabled": false}`; ReDocs hosts no LLM and no proxy.
 
 ## Terminology
 
