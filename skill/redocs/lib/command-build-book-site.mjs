@@ -124,8 +124,8 @@ export function buildBook(o) {
     // must hash the same for the same sources (pack relies on it).
     const sourceHash = hashSources(book.root, book.config);
     writeOut(dist, BUILD_STAMP, `${JSON.stringify({ schema: 'redocs/build', redocsVersion: book.config.redocsVersion || null, sourceHash }, null, 2)}\n`, written);
-  // Opt-in Ask AI panel: the query engine, the tool loop and the UI, plus one agent index per milestone.
-  const chat = book.config.chat?.enabled === true;
+  // Ask AI panel (on unless book.json chat.enabled is false): the query engine, the tool loop and the UI, plus one agent index per milestone.
+  const chat = book.config.chat?.enabled !== false;
   const agentIndexes = chat ? buildAgentIndexes(book, rendered) : null;
   if (chat) for (const file of SITE.chatScripts) writeOut(dist, file, readFileSync(chatScriptSource(file)), written);
   copyTree(path.join(book.root, 'assets'), path.join(dist, 'assets'), 'assets', written);

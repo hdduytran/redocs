@@ -66,7 +66,7 @@ function copyToolbar() {
 </div>`;
 }
 
-// Ask AI panel (book.json chat.enabled). Markup only: redocs-chat.js reveals the toggle once
+// Ask AI panel (on unless book.json chat.enabled is false). Markup only: redocs-chat.js reveals the toggle once
 // the agent index and chat scripts have loaded, so a reader without JS never sees a dead button.
 // On wide screens the panel docks to the right and pushes the page left (no overlay).
 function chatPanel() {
@@ -186,7 +186,7 @@ export function renderShell(o) {
     : '';
   const copy = o.copyMeta ? copyToolbar() : '';
   const comments = o.comments !== undefined ? commentThread(o.comments) : '';
-  const chat = book.config.chat?.enabled === true;
+  const chat = book.config.chat?.enabled !== false;
   // Docked panel: apply the open state and width before first paint so the page does not jump.
   const chatEarly = chat
     ? `\n<script>try{var w=Number(localStorage.getItem('redocs-chat-width'));if(w>0)document.documentElement.style.setProperty('--rd-chat-width',w+'px');var c=JSON.parse(sessionStorage.getItem(${safeJson(`redocs-chat-state:${book.config.id}`)})||'null');if(c&&c.open&&!/[?&]embed=1/.test(location.search))document.documentElement.classList.add('rd-chat-open');}catch(e){}</script>`

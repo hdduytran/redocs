@@ -32,8 +32,17 @@ async function chatBook(chat = { enabled: true }) {
   return dir;
 }
 
-test('chat is off by default: no agent index, no chat scripts, no panel', () => {
+test('chat is on by default: agent index, chat scripts and panel without any book.json entry', () => {
   const dir = starterBook();
+  const result = buildBook({ book: dir });
+  assert.equal(result.chat, true);
+  assert.ok(existsSync(path.join(dir, 'dist/v1/agent-index.js')));
+  assert.ok(existsSync(path.join(dir, 'dist/_redocs/redocs-chat-agent.js')));
+  assert.match(readFileSync(path.join(dir, 'dist/v1/overview/system-context.html'), 'utf8'), /rd-chat/);
+});
+
+test('chat.enabled false removes the panel: no agent index, no chat scripts, no panel', async () => {
+  const dir = await chatBook({ enabled: false });
   const result = buildBook({ book: dir });
   assert.equal(result.chat, false);
   assert.ok(!existsSync(path.join(dir, 'dist/v1/agent-index.js')));
