@@ -125,7 +125,7 @@ export const MIGRATIONS = [
       {
         id: 'enable-chat',
         kind: 'optional',
-        title: 'Optional: add the Ask AI panel with "chat": {"enabled": true} in book.json (readers bring their own model)',
+        title: 'Optional: tune the Ask AI panel under "chat" in book.json (shown by default since 0.4.0; "enabled": false removes it)',
         needed(ctx) {
           return !ctx.config.chat;
         },
@@ -182,6 +182,21 @@ export const MIGRATIONS = [
           for (const file of ciPipelineFiles(ctx.config.id, publishRel, 'both')) {
             if (!ctx.exists(file.path)) ctx.writeText(file.path, file.content);
           }
+        },
+      },
+    ],
+  },
+  {
+    version: '0.4.0',
+    date: '2026-11-10',
+    summary: 'Ask AI panel is shown by default; "chat": {"enabled": false} removes it.',
+    steps: [
+      {
+        id: 'chat-default-shown',
+        kind: 'optional',
+        title: 'The Ask AI panel is now on by default; set "chat": {"enabled": false} in book.json if this book must not offer it',
+        needed(ctx) {
+          return ctx.config.chat?.enabled !== false;
         },
       },
     ],

@@ -3,13 +3,13 @@
 //
 // dist/
 // ├── index.html                     -> redirect to <current>/index.html
-// ├── _redocs/{redocs.css,redocs.js} shared theme (+ redocs-query/-chat-agent/-chat.js with chat)
+// ├── _redocs/{redocs.css,redocs.js} shared theme (+ redocs-query/-chat-agent/-chat.js unless chat is disabled)
 // ├── assets/...                     copied book assets
 // ├── artifacts/<id>/<output>        copied artifacts (resize script injected)
 // └── <milestone>/
 //     ├── index.html                 book home at this milestone
 //     ├── search-index.js
-//     ├── agent-index.js             only when book.json chat.enabled (Ask AI panel)
+//     ├── agent-index.js             unless book.json chat.enabled is false (Ask AI panel)
 //     ├── <page-id>.html
 //     ├── _standalone/<page-id>.html standalone HTML sources shown in an iframe
 //     ├── catalog/index.html, catalog/<type>.html

@@ -62,7 +62,7 @@
     },
     "chat": {
       "type": "object",
-      "description": "Opt-in 'Ask AI' panel in the built book. Off by default. When enabled, the reader's question and the book sections the model asks for are sent to the LLM endpoint the reader configures (their own API key or a local model); nothing is sent until they press Send.",
+      "description": "'Ask AI' panel in the built book. On by default; set enabled to false to remove it. While shown, the reader's question and the book sections the model asks for are sent to the LLM endpoint the reader configures (their own API key or a local model); nothing is sent until they press Send.",
       "additionalProperties": false,
       "properties": {
         "enabled": { "type": "boolean" },
